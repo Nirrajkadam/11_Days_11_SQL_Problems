@@ -1,13 +1,6 @@
 transaction_id,transation_date,category,amount,payment_mode
-1,2025-09-01,Food,450.00,Cash
-2,2025-09-01,Fuel,1200.00,Card
-3,2025-09-02,Food,400.00,UPI
+1,2025-09-01,Food,250.00,UPI
+2,2025-09-01,Fuel,500.00,UPI
+3,2025-09-02,Shopping,1200.00,Card
 4,2025-09-03,Travel,2500.00,Card
-5,2025-09-04,Entertainment,1500.00,Card
-6,2025-09-05,Medical,800.00,UPI
-7,2025-09-06,Shopping,3200.00,Card
-8,2025-09-07,Travel,4500.00,UPI
-9,2025-09-08,Shopping,1200.00,UPI
-10,2025-09-09,Food,300.00,UPI
-11,2025-09-10,Medical,2500.00,UPI
-12,2025-09-11,Food,200.00,UPI
+5,2025-09-04,Medical,800.00,UPI

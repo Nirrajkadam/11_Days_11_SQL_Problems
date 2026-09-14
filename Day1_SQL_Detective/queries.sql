@@ -1,93 +1,66 @@
 -- ============================================================
--- Day 1: SQL Detective - Query Script
+-- Day 1: SQL Detective - Personal Finance Analysis
 -- Database: day1_sql_detective
--- Description: Personal Finance & Transaction Analysis SQL Queries
 -- ============================================================
 
--- Step 1: Database Creation
--- CREATE DATABASE day1_sql_detective;
--- \c day1_sql_detective;
+-- Step 1: Database Setup
+CREATE DATABASE day1_sql_detective;
+\c day1_sql_detective;
 
 -- Step 2: Table Creation
-DROP TABLE IF EXISTS transactions;
-
-CREATE TABLE transactions (
-    transaction_id SERIAL PRIMARY KEY,
-    transation_date DATE NOT NULL, -- Note: Column named transation_date as created in Day 1 schema
-    category VARCHAR(50) NOT NULL,
-    amount NUMERIC(10, 2) NOT NULL,
-    payment_mode VARCHAR(20) NOT NULL
+CREATE TABLE transactions(
+    transaction_id INT,
+    transation_date DATE,
+    category VARCHAR(50),
+    amount DECIMAL(10,2),
+    payment_mode VARCHAR(20)
 );
 
--- Alternative view / column alias fix if needed:
--- ALTER TABLE transactions RENAME COLUMN transation_date TO transaction_date;
-
--- Step 3: Insert 12 Sample Records
-INSERT INTO transactions (transation_date, category, amount, payment_mode) VALUES
-('2025-09-01', 'Food', 450.00, 'Cash'),
-('2025-09-01', 'Fuel', 1200.00, 'Card'),
-('2025-09-02', 'Food', 400.00, 'UPI'),
-('2025-09-03', 'Travel', 2500.00, 'Card'),
-('2025-09-04', 'Entertainment', 1500.00, 'Card'),
-('2025-09-05', 'Medical', 800.00, 'UPI'),
-('2025-09-06', 'Shopping', 3200.00, 'Card'),
-('2025-09-07', 'Travel', 4500.00, 'UPI'),
-('2025-09-08', 'Shopping', 1200.00, 'UPI'),
-('2025-09-09', 'Food', 300.00, 'UPI'),
-('2025-09-10', 'Medical', 2500.00, 'UPI'),
-('2025-09-11', 'Food', 200.00, 'UPI');
+-- Step 3: Insert Dataset Records
+INSERT INTO transactions VALUES
+(1, '2025-09-01', 'Food', 250.00, 'UPI'),
+(2, '2025-09-01', 'Fuel', 500.00, 'UPI'),
+(3, '2025-09-02', 'Shopping', 1200.00, 'Card'),
+(4, '2025-09-03', 'Travel', 2500.00, 'Card'),
+(5, '2025-09-04', 'Medical', 800.00, 'UPI');
 
 -- ============================================================
--- Day 1 Queries & Analysis
+-- Analysis Queries
 -- ============================================================
 
--- Query 1: View all transactions
+-- Query 1: View all transaction records
 SELECT * FROM transactions;
 
--- Query 2: Category-wise Total Spending (Ordered by highest spending)
-SELECT category,
-       SUM(amount) AS total_spending
-FROM transactions
-GROUP BY category
-ORDER BY SUM(amount) DESC;
+-- Query 2: Count total number of transactions
+SELECT COUNT(*) FROM transactions;
 
--- Query 3: Payment Mode Analysis (Count & Total Amount per Payment Method)
+-- Query 3: Calculate Average Transaction Amount
+SELECT AVG(amount) AS avg_amount FROM transactions;
+
+-- Query 4: Highest Value Transaction
+SELECT * FROM transactions
+ORDER BY amount DESC
+LIMIT 1;
+
+-- Query 5: Lowest Value Transaction
+SELECT * FROM transactions
+ORDER BY amount ASC
+LIMIT 1;
+
+-- Query 6: Payment Mode Breakdown (Count of transactions per method)
 SELECT payment_mode,
-       COUNT(*) AS transactions,
-       SUM(amount) AS total_amount
+       COUNT(*) AS total_transactions
 FROM transactions
-GROUP BY payment_mode
-ORDER BY total_amount DESC;
+GROUP BY payment_mode;
 
--- Query 4: Average Transaction Amount
-SELECT ROUND(AVG(amount), 2) AS avg_transaction_amount
-FROM transactions;
+-- Query 7: Top 3 Highest Transactions
+SELECT * FROM transactions
+ORDER BY amount DESC
+LIMIT 3;
 
--- Query 5: High Value Transactions (> ₹2000)
-SELECT *
-FROM transactions
-WHERE amount > 2000
-ORDER BY amount DESC;
-
--- Query 6: Category Ranking using Window Function (RANK)
+-- Query 8: Category Ranking using Window Function (RANK)
 SELECT category,
        SUM(amount) AS total,
-       RANK() OVER(ORDER BY SUM(amount) DESC) AS rank_no
+       RANK() OVER (ORDER BY SUM(amount) DESC) AS rank_no
 FROM transactions
 GROUP BY category;
-
--- Query 7: Running Total over Time using Window Function (SUM OVER)
-SELECT transation_date,
-       amount,
-       SUM(amount) OVER(
-         ORDER BY transation_date, transaction_id
-       ) AS running_total
-FROM transactions;
-
--- Bonus Query: Top Spending Category (Limit 1)
-SELECT category,
-       SUM(amount) AS total_spend
-FROM transactions
-GROUP BY category
-ORDER BY total_spend DESC
-LIMIT 1;

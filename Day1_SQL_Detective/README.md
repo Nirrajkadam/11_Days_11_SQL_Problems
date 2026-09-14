@@ -1,7 +1,7 @@
 # 🔍 Day 1: SQL Detective (Personal Finance Analysis)
 
 Welcome to **Day 1** of the **11 Days 11 SQL Problems** Challenge! 🚀  
-In this project, we explore personal transaction data using SQL to uncover spending habits, identify high-value expenditures, rank categories, and calculate cumulative spending using SQL window functions.
+In this project, we analyze personal transaction data in PostgreSQL to uncover spending habits, identify highest & lowest expenditures, analyze payment methods, and rank categories using SQL window functions (`RANK() OVER`).
 
 ---
 
@@ -13,10 +13,11 @@ Day1_SQL_Detective
 ├── README.md
 ├── queries.sql
 ├── screenshots/
-│   ├── 01_table_data.png
-│   ├── 02_category_spending.png
-│   ├── 03_ranking_result.png
-│   └── 04_top_transactions.png
+│   ├── 01_create_database.png
+│   ├── 02_create_table_and_insert.png
+│   ├── 03_avg_max_min.png
+│   ├── 04_group_by_payment_top3.png
+│   └── 05_category_ranking_window_fn.png
 └── dataset/
     ├── schema_and_data.sql
     └── transactions.csv
@@ -24,119 +25,105 @@ Day1_SQL_Detective
 
 ---
 
-## 🗄️ Database & Table Schema
+## 🗄️ Database & Schema Setup
 
-**Database:** `day1_sql_detective`  
-**Table:** `transactions`
+```sql
+CREATE DATABASE day1_sql_detective;
+\c day1_sql_detective
 
-| Column | Data Type | Description |
-|---|---|---|
-| `transaction_id` | `SERIAL PRIMARY KEY` | Unique Transaction Identifier |
-| `transation_date` | `DATE` | Date of Transaction |
-| `category` | `VARCHAR(50)` | Expenditure Category (Food, Travel, etc.) |
-| `amount` | `NUMERIC(10, 2)` | Transaction Amount in ₹ |
-| `payment_mode` | `VARCHAR(20)` | Payment Method (UPI, Card, Cash) |
+CREATE TABLE transactions(
+    transaction_id INT,
+    transation_date DATE,
+    category VARCHAR(50),
+    amount DECIMAL(10,2),
+    payment_mode VARCHAR(20)
+);
+
+INSERT INTO transactions VALUES
+(1, '2025-09-01', 'Food', 250.00, 'UPI'),
+(2, '2025-09-01', 'Fuel', 500.00, 'UPI'),
+(3, '2025-09-02', 'Shopping', 1200.00, 'Card'),
+(4, '2025-09-03', 'Travel', 2500.00, 'Card'),
+(5, '2025-09-04', 'Medical', 800.00, 'UPI');
+```
 
 ---
 
-## 💻 SQL Queries & Key Results
+## 💻 SQL Queries & Execution Results
 
-### 1️⃣ Payment Mode Analysis
+### 1️⃣ Full Table View
 ```sql
-SELECT payment_mode,
-       COUNT(*) AS transactions,
-       SUM(amount) AS total_amount
-FROM transactions
-GROUP BY payment_mode
-ORDER BY total_amount DESC;
+SELECT * FROM transactions;
 ```
-**Output:**
-| Payment Mode | Transactions | Total Amount (₹) |
-|---|---|---|
-| **UPI** | 7 | ₹9,900.00 |
-| **Card** | 4 | ₹8,400.00 |
-| **Cash** | 1 | ₹450.00 |
+| transaction_id | transation_date | category | amount | payment_mode |
+|---|---|---|---|---|
+| 1 | 2025-09-01 | Food | ₹250.00 | UPI |
+| 2 | 2025-09-01 | Fuel | ₹500.00 | UPI |
+| 3 | 2025-09-02 | Shopping | ₹1,200.00 | Card |
+| 4 | 2025-09-03 | Travel | ₹2,500.00 | Card |
+| 5 | 2025-09-04 | Medical | ₹800.00 | UPI |
 
 ---
 
 ### 2️⃣ Average Transaction Amount
 ```sql
-SELECT ROUND(AVG(amount), 2) AS avg_amount
-FROM transactions;
+SELECT AVG(amount) AS avg_amount FROM transactions;
 ```
-**Output:** `₹1562.50`
+**Result:** `1050.00`
 
 ---
 
-### 3️⃣ High Value Transactions (> ₹2000)
+### 3️⃣ Maximum & Minimum Expense
 ```sql
-SELECT *
-FROM transactions
-WHERE amount > 2000;
+-- Highest Expense (Travel)
+SELECT * FROM transactions ORDER BY amount DESC LIMIT 1;
+-- Result: Travel (₹2,500.00, Card)
+
+-- Lowest Expense (Food)
+SELECT * FROM transactions ORDER BY amount ASC LIMIT 1;
+-- Result: Food (₹250.00, UPI)
 ```
-**Output:**
-| transaction_id | transation_date | category | amount | payment_mode |
-|---|---|---|---|---|
-| 4 | 2025-09-03 | Travel | ₹2,500.00 | Card |
-| 7 | 2025-09-06 | Shopping | ₹3,200.00 | Card |
-| 8 | 2025-09-07 | Travel | ₹4,500.00 | UPI |
-| 11 | 2025-09-10 | Medical | ₹2,500.00 | UPI |
 
 ---
 
-### 4️⃣ Category Spending & Ranking (Window Function: `RANK()`)
+### 4️⃣ Payment Mode Breakdown
+```sql
+SELECT payment_mode,
+       COUNT(*) AS total_transactions
+FROM transactions
+GROUP BY payment_mode;
+```
+| payment_mode | total_transactions |
+|---|---|
+| **UPI** | 3 |
+| **Card** | 2 |
+
+---
+
+### 5️⃣ Category Spending & Ranking (Window Function `RANK()`)
 ```sql
 SELECT category,
        SUM(amount) AS total,
-       RANK() OVER(ORDER BY SUM(amount) DESC) AS rank_no
+       RANK() OVER (ORDER BY SUM(amount) DESC) AS rank_no
 FROM transactions
 GROUP BY category;
 ```
-**Output:**
-| Category | Total (₹) | Rank |
+| category | total | rank_no |
 |---|---|---|
-| **Travel** | ₹7,000.00 | 1 |
-| **Shopping** | ₹4,400.00 | 2 |
-| **Medical** | ₹3,300.00 | 3 |
-| **Entertainment** | ₹1,500.00 | 4 |
-| **Food** | ₹1,350.00 | 5 |
-| **Fuel** | ₹1,200.00 | 6 |
+| **Travel** | ₹2,500.00 | 1 |
+| **Shopping** | ₹1,200.00 | 2 |
+| **Medical** | ₹800.00 | 3 |
+| **Fuel** | ₹500.00 | 4 |
+| **Food** | ₹250.00 | 5 |
 
 ---
 
-### 5️⃣ Cumulative Spend / Running Total (Window Function: `SUM() OVER()`)
-```sql
-SELECT transation_date,
-       amount,
-       SUM(amount) OVER(
-         ORDER BY transation_date, transaction_id
-       ) AS running_total
-FROM transactions;
-```
-**Output:**
-| transation_date | amount | running_total |
-|---|---|---|
-| 2025-09-01 | ₹450.00 | ₹450.00 |
-| 2025-09-01 | ₹1200.00 | ₹1650.00 |
-| 2025-09-02 | ₹400.00 | ₹2050.00 |
-| 2025-09-03 | ₹2500.00 | ₹4550.00 |
-| 2025-09-04 | ₹1500.00 | ₹6050.00 |
-| 2025-09-05 | ₹800.00 | ₹6850.00 |
-| 2025-09-06 | ₹3200.00 | ₹10050.00 |
-| 2025-09-07 | ₹4500.00 | ₹14550.00 |
-| 2025-09-08 | ₹1200.00 | ₹15750.00 |
-| 2025-09-09 | ₹300.00 | ₹16050.00 |
-| 2025-09-10 | ₹2500.00 | ₹18550.00 |
-| 2025-09-11 | ₹200.00 | ₹18750.00 |
+## 📊 Key Insights & Findings
 
----
-
-## 📊 Business Insights
-
-1. 💳 **UPI Dominance:** UPI is the most frequently used payment method (7 out of 12 transactions) accounting for **₹9,900** (~53%) of total spending.
-2. ✈️ **Travel Spending:** Travel emerged as the **#1 expenditure category** (₹7,000 across 2 transactions), driven by high-value transactions.
-3. 🛍️ **High-Value Spends:** 4 out of 12 transactions were over ₹2,000, contributing to **₹12,700** (~67.7%) of overall expenditure.
-4. 🍔 **Frequent Low-Value Spends:** Food and Fuel categories consist of smaller, frequent transactions, maintaining consistent daily cash/UPI liquidity.
+1. 💳 **Payment Preference:** **UPI** is the most preferred payment mode (3 out of 5 transactions).
+2. ✈️ **Highest Expenditure:** **Travel** is the top expense category at **₹2,500** (Rank 1).
+3. 🍔 **Lowest Expenditure:** **Food** is the lowest recorded expense at **₹250** (Rank 5).
+4. 📈 **Average Transaction:** The average order size across transactions is **₹1,050**.
 
 ---
 
@@ -145,31 +132,32 @@ FROM transactions;
 ```text
 🚀 Day 1 of #11Days11SQLProblems: SQL Detective Challenge Completed! 🕵️‍♂️💻
 
-Today I kicked off Day 1 of my SQL challenge by analyzing personal transaction data in PostgreSQL! 📊
+Today I kicked off Day 1 of my SQL challenge by building a personal transaction database in PostgreSQL and running key analytical queries! 📊
 
-Key SQL Skills Applied:
-✅ Data Definition (DDL) & Insertion (DML)
-✅ Aggregations (SUM, AVG, COUNT, ROUND)
-✅ Grouping & Filtering (GROUP BY, ORDER BY, HAVING/WHERE)
-✅ Advanced Window Functions (RANK() OVER, SUM() OVER - Running Total)
+Key Concepts Covered:
+✅ Database Setup & DDL (CREATE DATABASE, CREATE TABLE)
+✅ Data Insertion & Selection (INSERT INTO, SELECT)
+✅ Aggregations (AVG, COUNT, SUM)
+✅ Sorting & Filtering (ORDER BY DESC/ASC, LIMIT)
+✅ Grouping (GROUP BY payment_mode)
+✅ Advanced Window Functions (RANK() OVER)
 
-💡 Top Insights Uncovered:
-• 📱 UPI is the #1 Payment Mode with 7 transactions (₹9,900 total).
-• ✈️ Travel ranked #1 in category spend at ₹7,000.
-• 💰 High-value transactions (> ₹2,000) account for over 67% of total expenses.
+💡 Insights Discovered:
+• 📱 UPI led payment volume with 60% of total transactions.
+• ✈️ Travel ranked #1 in category spend at ₹2,500.
+• 📊 Average transaction amount was ₹1,050.
 
-Check out the full queries and dataset on GitHub: [Your Repository Link Here]
+GitHub Repository: [Your GitHub Repo Link Here]
 
-#SQL #DataAnalytics #PostgreSQL #DataDetective #11DaysOfSQL #DataScience #CareerInData
+#SQL #DataAnalytics #PostgreSQL #DataDetective #11DaysOfSQL #DataScience #DataEngineering
 ```
 
 ---
 
-## ✅ Day 1 Completion Criteria Check
+## ✅ Day 1 Status
 - [x] Database Created (`day1_sql_detective`)
 - [x] Table Created (`transactions`)
-- [x] 12 Records Inserted
-- [x] 5+ Analytical SQL Queries Executed
-- [x] Running Total Window Function Completed
-- [x] Screenshots & Query Outputs Saved
-- [x] Git Repository Updated & Ready
+- [x] Data Inserted & Verified
+- [x] Queries Run & Analyzed
+- [x] psql Terminal Screenshots Saved in `screenshots/`
+- [x] Git Commit Done (`git commit -m "Day 1 SQL Detective completed"`)
