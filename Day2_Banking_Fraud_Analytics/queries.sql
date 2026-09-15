@@ -1,47 +1,47 @@
 -- ============================================================
 -- Day 2: Banking & Fraud Detection Analytics
--- Database: day2_banking_db
+-- Database: day2_bank_analysis
 -- Dataset: bank_transactions_data_2.csv (2,512 rows)
 -- ============================================================
 
 -- Step 1: Database Setup
--- CREATE DATABASE day2_banking_db;
--- \c day2_banking_db;
+CREATE DATABASE day2_bank_analysis;
+\c day2_bank_analysis;
 
--- Step 2: Table Creation
-DROP TABLE IF EXISTS bank_transactions;
-
-CREATE TABLE bank_transactions (
-    TransactionID VARCHAR(20) PRIMARY KEY,
-    AccountID VARCHAR(20) NOT NULL,
-    TransactionAmount NUMERIC(10, 2) NOT NULL,
-    TransactionDate TIMESTAMP NOT NULL,
-    TransactionType VARCHAR(20) NOT NULL,
-    Location VARCHAR(100),
+-- Step 2: Table Creation (Matching exact psql schema)
+CREATE TABLE bank_transactions(
+    TransactionID VARCHAR(20),
+    AccountID VARCHAR(20),
+    TransactionAmount NUMERIC,
+    TransactionDate TIMESTAMP,
+    TransactionType VARCHAR(50),
+    Loction VARCHAR(100),
     DeviceID VARCHAR(50),
-    IPAddress VARCHAR(50),
+    IP_Address VARCHAR(50),
     MerchantID VARCHAR(50),
-    Channel VARCHAR(20) NOT NULL,
+    Channel VARCHAR(50),
     CustomerAge INT,
-    CustomerOccupation VARCHAR(50),
+    CustomerOccupation VARCHAR(100),
     TransactionDuration INT,
     LoginAttempts INT,
-    AccountBalance NUMERIC(12, 2),
-    PreviousTransactionDate TIMESTAMP
+    AccountBalance NUMERIC,
+    PreviousTransationDate TIMESTAMP
 );
 
--- Note: Import data via \copy command in psql:
--- \copy bank_transactions FROM 'dataset/bank_transactions_data_2.csv' WITH (FORMAT csv, HEADER true);
+-- Step 3: Copy Data from CSV
+\copy bank_transactions FROM 'C:/Users/kadam/Downloads/11_day_11_problem/Dataset/bank_transactions_data_2.csv' DELIMITER ',' CSV HEADER;
 
 -- ============================================================
 -- SECTION 1: Core Banking Overview & Aggregations
 -- ============================================================
 
--- Query 1: Total Transactions Verification (Target: 2,512)
+-- Query 1: Total Transactions Count (Target: 2,512)
+SELECT COUNT(*) FROM bank_transactions;
+
 SELECT COUNT(*) AS total_transactions
 FROM bank_transactions;
 
--- Query 2: Total Volume / Financial Amount Transacted
+-- Query 2: Total Volume Transacted
 SELECT ROUND(SUM(TransactionAmount), 2) AS total_amount
 FROM bank_transactions;
 
@@ -49,97 +49,55 @@ FROM bank_transactions;
 SELECT ROUND(AVG(TransactionAmount), 2) AS average_amount
 FROM bank_transactions;
 
--- Query 4: Transaction Type Breakdown (Debit vs Credit Analysis)
+-- Query 4: Transaction Type Breakdown (Debit vs Credit)
 SELECT TransactionType,
        COUNT(*) AS total_transactions,
-       ROUND(SUM(TransactionAmount), 2) AS total_amount,
-       ROUND(AVG(TransactionAmount), 2) AS avg_amount
+       ROUND(SUM(TransactionAmount), 2) AS total_amount
 FROM bank_transactions
 GROUP BY TransactionType
 ORDER BY total_amount DESC;
 
 -- Query 5: Channel Preference Breakdown (Branch vs ATM vs Online)
 SELECT Channel,
-       COUNT(*) AS total_transactions,
-       ROUND(SUM(TransactionAmount), 2) AS total_amount
+       COUNT(*) AS total_transactions
 FROM bank_transactions
 GROUP BY Channel
 ORDER BY total_transactions DESC;
 
 -- Query 6: Top 10 Highest Value Transactions
 SELECT TransactionID,
-       AccountID,
        TransactionAmount,
        TransactionType,
-       Channel,
-       CustomerOccupation
+       Channel
 FROM bank_transactions
 ORDER BY TransactionAmount DESC
 LIMIT 10;
 
--- Query 7: Customer Occupation-wise Expenditure & Activity
+-- Query 7: Customer Occupation Spending Breakdown
 SELECT CustomerOccupation,
-       COUNT(*) AS transaction_count,
-       ROUND(SUM(TransactionAmount), 2) AS total_amount,
-       ROUND(AVG(TransactionAmount), 2) AS avg_amount
+       ROUND(SUM(TransactionAmount), 2) AS total_amount
 FROM bank_transactions
 GROUP BY CustomerOccupation
 ORDER BY total_amount DESC;
 
-
 -- ============================================================
--- SECTION 2: Fraud Detection & Risk Analytics 🚨
+-- SECTION 2: Fraud Risk & Security Analytics 🚨
 -- ============================================================
 
--- Query 8: Login Attempts Distribution (Detecting Brute-Force / Unflagged Logins)
+-- Query 8: Login Attempts Distribution (Detecting Authentication Anomalies)
 SELECT LoginAttempts,
        COUNT(*) AS total_transactions
 FROM bank_transactions
 GROUP BY LoginAttempts
-ORDER BY LoginAttempts DESC;
+ORDER BY LoginAttempts;
 
--- Query 9: High-Risk Login Flagging (> 3 Login Attempts)
-SELECT TransactionID,
-       AccountID,
-       TransactionAmount,
-       Channel,
-       CustomerOccupation,
-       LoginAttempts,
-       AccountBalance
+-- Query 9: High Risk Fraud Audit (Login Attempts > 3)
+SELECT *
 FROM bank_transactions
-WHERE LoginAttempts > 3
-ORDER BY TransactionAmount DESC;
+WHERE LoginAttempts > 3;
 
--- Query 10: Channel Risk Profile (Average Login Attempts per Channel)
+-- Query 10: Average Login Attempts per Channel
 SELECT Channel,
-       ROUND(AVG(LoginAttempts), 2) AS avg_login_attempts,
-       COUNT(CASE WHEN LoginAttempts > 3 THEN 1 END) AS high_risk_logins
+       AVG(LoginAttempts)
 FROM bank_transactions
-GROUP BY Channel
-ORDER BY avg_login_attempts DESC;
-
--- Query 11: Suspicious Low-Balance / Overdraft Transactions (Balance < Amount)
-SELECT TransactionID,
-       AccountID,
-       TransactionAmount,
-       AccountBalance,
-       (TransactionAmount - AccountBalance) AS deficit_amount,
-       Channel,
-       LoginAttempts
-FROM bank_transactions
-WHERE TransactionType = 'Debit' AND TransactionAmount > AccountBalance
-ORDER BY deficit_amount DESC
-LIMIT 10;
-
--- Query 12: High-Risk Fraud Audit Matrix (High Amount + High Login Attempts)
-SELECT TransactionID,
-       AccountID,
-       TransactionAmount,
-       Channel,
-       CustomerOccupation,
-       LoginAttempts,
-       TransactionDuration,
-       Location
-FROM bank_transactions
-WHERE LoginAttempts >= 4 AND TransactionAmount > 500
-ORDER BY LoginAttempts DESC, TransactionAmount DESC;
+GROUP BY Channel;
