@@ -1,7 +1,7 @@
 # Day 3: E-Commerce Data Analytics (SQL JOINs and CASE WHEN Logic)
 
 Welcome to Day 3 of the 11 Days 11 SQL Problems Challenge.
-In Day 3, we advanced beyond single-table aggregations by introducing relational table design (creating customers table from orders), executing SQL JOIN operations (INNER JOIN, LEFT JOIN), and implementing business conditional logic using CASE WHEN statements on an E-Commerce dataset of 1,590 transactions.
+In Day 3, we analyzed an E-Commerce dataset of 1,590 orders in PostgreSQL database day3_ecommerce_analysis. We built a relational customer table, performed SQL JOIN operations, and implemented business conditional logic using CASE WHEN statements.
 
 ---
 
@@ -13,13 +13,11 @@ Day3_Ecommerce_JOINs_CaseWhen
 ├── README.md
 ├── queries.sql
 ├── screenshots/
-│   ├── 01_customers_table_creation.png
-│   ├── 02_inner_join_query.png
-│   ├── 03_customer_revenue_join.png
-│   ├── 04_left_join_query.png
-│   ├── 05_delivered_vs_returned_case.png
-│   ├── 06_cod_vs_prepaid_case.png
-│   └── 07_advanced_case_join.png
+│   ├── 01_copy_dataset_and_totals.png
+│   ├── 02_status_iscod_state_breakdown.png
+│   ├── 03_product_name_and_returned.png
+│   ├── 04_create_customers_inner_join.png
+│   └── 05_customer_revenue_city_state_join.png
 └── dataset/
     ├── OrdersCleaned_UTF8.csv
     └── schema_and_data.sql
@@ -29,11 +27,11 @@ Day3_Ecommerce_JOINs_CaseWhen
 
 ## Database and Relational Schema Setup
 
-Database: day3_ecommerce_db
+Database: day3_ecommerce_analysis
 
 ```sql
-CREATE DATABASE day3_ecommerce_db;
-\c day3_ecommerce_db;
+CREATE DATABASE day3_ecommerce_analysis;
+\c day3_ecommerce_analysis;
 
 CREATE TABLE orders (
     order_index INT,
@@ -56,7 +54,7 @@ CREATE TABLE orders (
     product_name VARCHAR(255)
 );
 
-\copy orders FROM 'dataset/OrdersCleaned_UTF8.csv' DELIMITER ',' CSV HEADER;
+\copy orders FROM 'C:/Users/kadam/Downloads/11_day_11_problem/Dataset/OrdersCleaned_UTF8.csv' DELIMITER ',' CSV HEADER ENCODING 'UTF8';
 
 -- Create relational Customers table from Orders dataset
 CREATE TABLE customers AS
@@ -72,21 +70,90 @@ FROM orders;
 
 ## Executed SQL Queries and Output
 
-### 1. Relational Table Verification
+### 1. Dataset Overview and Total Revenue
 ```sql
-SELECT COUNT(*) AS total_customers FROM customers;
-SELECT COUNT(*) AS total_orders FROM orders;
+SELECT COUNT(*) FROM orders;
+SELECT ROUND(SUM(total), 2) AS total_revenue FROM orders;
 ```
-- Total Customers: 1,590
 - Total Orders: 1,590
+- Total Revenue: Rs 2,803,006.00
 
 ---
 
-### 2. INNER JOIN (Matching Customer and Order Records)
+### 2. Order Breakdown by Status
+```sql
+SELECT status,
+       COUNT(*) AS total_orders
+FROM orders
+GROUP BY status
+ORDER BY total_orders DESC;
+```
+| status | total_orders |
+|---|---|
+| Delivered | 1,401 |
+| Returned | 187 |
+| RTO | 2 |
+
+---
+
+### 3. Payment Mode Breakdown (isCOD)
+```sql
+SELECT iscod,
+       COUNT(*) AS orders,
+       ROUND(SUM(total), 2) AS revenue
+FROM orders
+GROUP BY iscod;
+```
+| iscod | orders | revenue (Rs) |
+|---|---|---|
+| f (Prepaid) | 578 | Rs 1,128,952.00 |
+| t (COD) | 1,012 | Rs 1,674,054.00 |
+
+---
+
+### 4. Top States by Order Volume
+```sql
+SELECT state,
+       COUNT(*) AS total_orders
+FROM orders
+GROUP BY state
+ORDER BY total_orders DESC
+LIMIT 5;
+```
+| state | total_orders |
+|---|---|
+| Maharashtra | 284 |
+| Karnataka | 186 |
+| Delhi | 134 |
+| Tamil Nadu | 116 |
+| West Bengal | 84 |
+
+---
+
+### 5. Top Products by Order Volume
+```sql
+SELECT product_name,
+       COUNT(*) AS total_orders
+FROM orders
+GROUP BY product_name
+ORDER BY total_orders DESC
+LIMIT 5;
+```
+| product_name | total_orders |
+|---|---|
+| One Week Weight-Loss (Peach) | 277 |
+| One Week Detox Trial | 262 |
+| One Week Weight-Loss (Mint) | 261 |
+| One Month Weight-Loss (Peach) | 252 |
+| One Month Weight-Loss (Mint) | 182 |
+
+---
+
+### 6. Relational INNER JOIN (Customers and Orders)
 ```sql
 SELECT c.customer_id,
        c.name,
-       c.state,
+       c.city,
        o.product_name,
        o.total
 FROM customers c
@@ -94,54 +161,39 @@ INNER JOIN orders o
 ON c.customer_id = o.id
 LIMIT 5;
 ```
-| customer_id | name | state | product_name | total |
+| customer_id | name | city | product_name | total |
 |---|---|---|---|---|
-| 30145 | Man | Odisha | One Week Weight-Loss (Peach) | 999.00 |
-| 30144 | Dik | Maharashtra | One Week Detox Trial | 599.00 |
-| 30143 | Shi | Karnataka | One Week Detox Trial | 599.00 |
-| 30142 | Pre | Maharashtra | One Month Weight-Loss (Peach) | 3596.00 |
-| 30138 | Dr. | Uttarakhand | One Week Weight-Loss (Mint) | 999.00 |
+| 30145 | Man | Nayagarh | One Week Weight-Loss (Peach) | 999.00 |
+| 30144 | Dik | Thane | One Week Detox Trial | 599.00 |
+| 30143 | Shi | Bangalore | One Week Detox Trial | 599.00 |
+| 30142 | Pre | Mumbai | One Month Weight-Loss (Peach) | 3596.00 |
+| 30138 | Dr. | Pauri Garhwal | One Week Weight-Loss (Mint) | 999.00 |
 
 ---
 
-### 3. Customer Revenue Analysis (INNER JOIN + GROUP BY)
+### 7. Customer Revenue Analysis (JOIN + GROUP BY)
 ```sql
 SELECT c.name,
-       c.state,
-       COUNT(*) AS total_orders,
-       SUM(o.total) AS revenue
+       c.city,
+       ROUND(SUM(o.total), 2) AS revenue
 FROM customers c
-INNER JOIN orders o
+JOIN orders o
 ON c.customer_id = o.id
-GROUP BY c.name, c.state
+GROUP BY c.name, c.city
 ORDER BY revenue DESC
 LIMIT 5;
 ```
-| name | state | total_orders | revenue (Rs) |
-|---|---|---|---|
-| Poo | Maharashtra | 13 | 27,161.00 |
-| Pri | Maharashtra | 5 | 13,403.00 |
-| San | Karnataka | 8 | 12,630.00 |
-| Sri | Andhra Pradesh | 6 | 12,008.00 |
-| Sne | Maharashtra | 4 | 11,559.00 |
+| name | city | revenue (Rs) |
+|---|---|---|
+| Poo | Mumbai | Rs 16,835.00 |
+| Pri | Mumbai | Rs 11,885.00 |
+| Kiv | Dimapur | Rs 10,320.00 |
+| Sri | Chittoor | Rs 9,411.00 |
+| Ash | Bangalore | Rs 8,449.00 |
 
 ---
 
-### 4. LEFT JOIN Operation
-```sql
-SELECT c.customer_id,
-       c.name,
-       o.product_name
-FROM customers c
-LEFT JOIN orders o
-ON c.customer_id = o.id
-LIMIT 5;
-```
-Result: Successfully retains all customer entities while mapping corresponding order items.
-
----
-
-### 5. Order Status Analysis (CASE WHEN: Successful vs Failed/Returned)
+### 8. Order Result Segmentation (CASE WHEN)
 ```sql
 SELECT
     CASE
@@ -159,26 +211,7 @@ GROUP BY result;
 
 ---
 
-### 6. Payment Segmentation Analysis (CASE WHEN: COD vs Prepaid)
-```sql
-SELECT
-    CASE
-        WHEN iscod = TRUE THEN 'COD'
-        ELSE 'Prepaid'
-    END AS payment_type,
-    COUNT(*) AS total_orders,
-    SUM(total) AS revenue
-FROM orders
-GROUP BY payment_type;
-```
-| payment_type | total_orders | revenue (Rs) | Share (%) |
-|---|---|---|---|
-| COD | 1,012 | Rs 1,674,054.00 | 59.7% |
-| Prepaid | 578 | Rs 1,128,952.00 | 40.3% |
-
----
-
-### 7. Advanced CASE WHEN + JOIN (Order Category Distribution by State)
+### 9. Advanced CASE WHEN + JOIN (Order Category Distribution by State)
 ```sql
 SELECT c.state,
        CASE
@@ -205,10 +238,10 @@ LIMIT 5;
 
 ## Key Business Insights
 
-1. Order Delivery Performance: 88.1% of orders (1,401 out of 1,590) were successfully delivered, while 11.9% (189 orders) resulted in returns or failed delivery.
-2. Payment Channel Preference: Cash on Delivery (COD) represents 59.7% of total revenue (Rs 1.67M out of Rs 2.80M total), indicating high dependency on post-delivery collections.
-3. Customer Concentration: Top customer Poo in Maharashtra generated Rs 27,161 across 13 orders.
-4. Geographic Segmentation: Maharashtra and Karnataka emerge as top states for both normal value (< Rs 2,000) and high value (>= Rs 2,000) order volume.
+1. Delivery Success Rate: 88.1% of orders (1,401 out of 1,590) were successfully delivered, while 11.9% (189 orders) resulted in returns/RTO.
+2. Payment Method Dependency: Cash on Delivery (COD) generated Rs 1,674,054.00 (59.7% of revenue) across 1,012 orders, compared to Rs 1,128,952.00 (40.3%) from 578 Prepaid orders.
+3. Top Product Category: One Week Weight-Loss (Peach) generated the highest volume with 277 orders.
+4. Top Revenue Cities: Customer Poo in Mumbai led individual customer revenue with Rs 16,835.00.
 
 ---
 
@@ -226,9 +259,10 @@ Key Technical Skills Applied:
 - Conditional Business Logic (CASE WHEN ... THEN ... ELSE ... END)
 
 Key Analytical Findings:
-- Delivery Success Rate: 88.1% of orders (1,401) were successfully delivered, while 11.9% (189) resulted in returns.
+- Total Revenue Generated: Rs 2.80M across 1,590 transactions.
+- Delivery Success Rate: 88.1% of orders (1,401) delivered, while 11.9% (189) resulted in returns/RTO.
 - Revenue by Payment Type: Cash on Delivery (COD) accounts for 59.7% of total revenue (Rs 1.67M out of Rs 2.80M).
-- Geographic Revenue Leaders: Maharashtra and Karnataka generated highest order volumes across both High Value (>= Rs 2,000) and Normal Value segments.
+- Geographic Revenue Leaders: Maharashtra (284 orders) and Karnataka (186 orders) generated highest volume across both High Value (>= Rs 2,000) and Normal Value segments.
 
 GitHub Repository:
 https://github.com/Nirrajkadam/11_Days_11_SQL_Problems/tree/main/Day3_Ecommerce_JOINs_CaseWhen
@@ -239,10 +273,9 @@ https://github.com/Nirrajkadam/11_Days_11_SQL_Problems/tree/main/Day3_Ecommerce_
 ---
 
 ## Day 3 Completion Check
-- Database Created (day3_ecommerce_db)
+- Database Created (day3_ecommerce_analysis)
 - Relational Tables Created (orders, customers)
-- 1,590 Orders Imported and Verified
-- INNER JOIN and LEFT JOIN Queries Executed
-- CASE WHEN Conditional Logic Executed
-- Terminal Screenshots Saved in screenshots/
+- 1,590 Orders Imported via \copy
+- All JOIN and CASE WHEN Queries Executed
+- Terminal Screenshots Saved
 - Git Commit Completed

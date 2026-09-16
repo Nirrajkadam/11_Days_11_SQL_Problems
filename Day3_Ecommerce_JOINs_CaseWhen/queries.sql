@@ -1,12 +1,12 @@
 -- ============================================================
 -- Day 3: E-Commerce Analytics (SQL JOINs & CASE WHEN Logic)
--- Database: day3_ecommerce_db
+-- Database: day3_ecommerce_analysis
 -- Dataset: OrdersCleaned_UTF8.csv (1,590 rows)
 -- ============================================================
 
 -- Step 1: Database Setup
-CREATE DATABASE day3_ecommerce_db;
-\c day3_ecommerce_db;
+CREATE DATABASE day3_ecommerce_analysis;
+\c day3_ecommerce_analysis;
 
 -- Step 2: Create Primary Orders Table
 DROP TABLE IF EXISTS orders;
@@ -33,7 +33,7 @@ CREATE TABLE orders (
 );
 
 -- Copy data from CSV
-\copy orders FROM 'C:/Users/kadam/Downloads/11_day_11_problem/Dataset/OrdersCleaned_UTF8.csv' DELIMITER ',' CSV HEADER;
+\copy orders FROM 'C:/Users/kadam/Downloads/11_day_11_problem/Dataset/OrdersCleaned_UTF8.csv' DELIMITER ',' CSV HEADER ENCODING 'UTF8';
 
 -- Step 3: Create Relational Customers Table
 DROP TABLE IF EXISTS customers;
@@ -46,63 +46,89 @@ SELECT DISTINCT
        state
 FROM orders;
 
--- Query 1: Verify Customers Table Count
-SELECT COUNT(*) AS total_customers FROM customers;
+-- Query 1: Total Orders Count
+SELECT COUNT(*) FROM orders;
 
--- Query 2: Verify Orders Table Count
-SELECT COUNT(*) AS total_orders FROM orders;
+-- Query 2: Total Revenue Generated
+SELECT ROUND(SUM(total), 2) AS total_revenue
+FROM orders;
 
--- ============================================================
--- SECTION 1: SQL JOINs Operations
--- ============================================================
+-- Query 3: Order Breakdown by Status
+SELECT status,
+       COUNT(*) AS total_orders
+FROM orders
+GROUP BY status
+ORDER BY total_orders DESC;
 
--- Query 3: INNER JOIN - Retrieve Matching Customer and Order Data
+-- Query 4: Revenue & Orders by Payment Mode (isCOD)
+SELECT iscod,
+       COUNT(*) AS orders,
+       ROUND(SUM(total), 2) AS revenue
+FROM orders
+GROUP BY iscod;
+
+-- Query 5: Top 10 States by Order Volume
+SELECT state,
+       COUNT(*) AS total_orders
+FROM orders
+GROUP BY state
+ORDER BY total_orders DESC
+LIMIT 10;
+
+-- Query 6: Top 10 Products by Sales Volume
+SELECT product_name,
+       COUNT(*) AS total_orders
+FROM orders
+GROUP BY product_name
+ORDER BY total_orders DESC
+LIMIT 10;
+
+-- Query 7: Returned Orders Count
+SELECT COUNT(*) AS returned_orders
+FROM orders
+WHERE date_returned IS NOT NULL;
+
+-- Query 8: Delivered Orders Count
+SELECT COUNT(*) AS delivered_orders
+FROM orders
+WHERE date_delivered IS NOT NULL;
+
+-- Query 9: Verify Customers Table Count
+SELECT COUNT(*) FROM customers;
+
+-- Query 10: INNER JOIN - Matching Customers and Orders
 SELECT c.customer_id,
        c.name,
-       c.state,
+       c.city,
        o.product_name,
        o.total
 FROM customers c
 INNER JOIN orders o
 ON c.customer_id = o.id
-LIMIT 10;
+LIMIT 20;
 
--- Query 4: Customer Revenue Analysis using INNER JOIN
+-- Query 11: Top Customers by Revenue (JOIN + GROUP BY)
 SELECT c.name,
-       c.state,
-       COUNT(*) AS total_orders,
-       SUM(o.total) AS revenue
+       c.city,
+       ROUND(SUM(o.total), 2) AS revenue
 FROM customers c
-INNER JOIN orders o
+JOIN orders o
 ON c.customer_id = o.id
-GROUP BY c.name, c.state
+GROUP BY c.name, c.city
 ORDER BY revenue DESC
 LIMIT 10;
 
--- Query 5: LEFT JOIN - All Customers with Order Info
-SELECT c.customer_id,
-       c.name,
-       o.product_name
+-- Query 12: State Revenue Analysis using JOIN
+SELECT c.state,
+       COUNT(o.id) AS orders,
+       ROUND(SUM(o.total), 2) AS revenue
 FROM customers c
-LEFT JOIN orders o
+JOIN orders o
 ON c.customer_id = o.id
-LIMIT 20;
+GROUP BY c.state
+ORDER BY revenue DESC;
 
--- ============================================================
--- SECTION 2: CASE WHEN Business Logic & Segmentation
--- ============================================================
-
--- Query 6: High Value vs Normal Value Orders (CASE WHEN)
-SELECT id,
-       total,
-       CASE
-           WHEN total >= 2000 THEN 'High Value'
-           ELSE 'Normal Value'
-       END AS order_type
-FROM orders
-LIMIT 20;
-
--- Query 7: Order Delivery Status Analysis (Successful vs Failed/Returned)
+-- Query 13: Order Result Segmentation (CASE WHEN)
 SELECT
     CASE
         WHEN status = 'Delivered' THEN 'Successful'
@@ -112,18 +138,18 @@ SELECT
 FROM orders
 GROUP BY result;
 
--- Query 8: Payment Channel Analysis (COD vs Prepaid Revenue)
+-- Query 14: Payment Channel Segmentation (CASE WHEN)
 SELECT
     CASE
         WHEN iscod = TRUE THEN 'COD'
         ELSE 'Prepaid'
     END AS payment_type,
     COUNT(*) AS total_orders,
-    SUM(total) AS revenue
+    ROUND(SUM(total), 2) AS revenue
 FROM orders
 GROUP BY payment_type;
 
--- Query 9: Advanced CASE WHEN + JOIN (Order Value Category by State)
+-- Query 15: Order Category by State (Advanced CASE WHEN + JOIN)
 SELECT c.state,
        CASE
            WHEN o.total >= 2000 THEN 'High Value'
