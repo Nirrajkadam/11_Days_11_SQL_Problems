@@ -1,7 +1,7 @@
 # Day 3: E-Commerce Data Analytics (SQL JOINs and CASE WHEN Logic)
 
 Welcome to Day 3 of the 11 Days 11 SQL Problems Challenge.
-In Day 3, we analyzed an E-Commerce dataset of 1,590 orders in PostgreSQL database day3_ecommerce_analysis. We built a relational customer table, performed SQL JOIN operations, and implemented business conditional logic using CASE WHEN statements.
+In Day 3, we analyzed an E-Commerce dataset of 1,590 orders in PostgreSQL database day3_ecommerce_analysis. We built a relational customer table, performed SQL JOIN operations (INNER JOIN, LEFT JOIN), and implemented business conditional logic using CASE WHEN statements.
 
 ---
 
@@ -17,7 +17,12 @@ Day3_Ecommerce_JOINs_CaseWhen
 │   ├── 02_status_iscod_state_breakdown.png
 │   ├── 03_product_name_and_returned.png
 │   ├── 04_create_customers_inner_join.png
-│   └── 05_customer_revenue_city_state_join.png
+│   ├── 05_customer_revenue_city_state_join.png
+│   ├── 06_state_status_join.png
+│   ├── 07_customer_revenue_state_join.png
+│   ├── 08_high_value_case_summary.png
+│   ├── 09_id_order_type_case_limit20.png
+│   └── 10_advanced_case_join_full.png
 └── dataset/
     ├── OrdersCleaned_UTF8.csv
     └── schema_and_data.sql
@@ -80,77 +85,10 @@ SELECT ROUND(SUM(total), 2) AS total_revenue FROM orders;
 
 ---
 
-### 2. Order Breakdown by Status
+### 2. Relational Table Verification and INNER JOIN
 ```sql
-SELECT status,
-       COUNT(*) AS total_orders
-FROM orders
-GROUP BY status
-ORDER BY total_orders DESC;
-```
-| status | total_orders |
-|---|---|
-| Delivered | 1,401 |
-| Returned | 187 |
-| RTO | 2 |
+SELECT COUNT(*) FROM customers;
 
----
-
-### 3. Payment Mode Breakdown (isCOD)
-```sql
-SELECT iscod,
-       COUNT(*) AS orders,
-       ROUND(SUM(total), 2) AS revenue
-FROM orders
-GROUP BY iscod;
-```
-| iscod | orders | revenue (Rs) |
-|---|---|---|
-| f (Prepaid) | 578 | Rs 1,128,952.00 |
-| t (COD) | 1,012 | Rs 1,674,054.00 |
-
----
-
-### 4. Top States by Order Volume
-```sql
-SELECT state,
-       COUNT(*) AS total_orders
-FROM orders
-GROUP BY state
-ORDER BY total_orders DESC
-LIMIT 5;
-```
-| state | total_orders |
-|---|---|
-| Maharashtra | 284 |
-| Karnataka | 186 |
-| Delhi | 134 |
-| Tamil Nadu | 116 |
-| West Bengal | 84 |
-
----
-
-### 5. Top Products by Order Volume
-```sql
-SELECT product_name,
-       COUNT(*) AS total_orders
-FROM orders
-GROUP BY product_name
-ORDER BY total_orders DESC
-LIMIT 5;
-```
-| product_name | total_orders |
-|---|---|
-| One Week Weight-Loss (Peach) | 277 |
-| One Week Detox Trial | 262 |
-| One Week Weight-Loss (Mint) | 261 |
-| One Month Weight-Loss (Peach) | 252 |
-| One Month Weight-Loss (Mint) | 182 |
-
----
-
-### 6. Relational INNER JOIN (Customers and Orders)
-```sql
 SELECT c.customer_id,
        c.name,
        c.city,
@@ -171,47 +109,108 @@ LIMIT 5;
 
 ---
 
-### 7. Customer Revenue Analysis (JOIN + GROUP BY)
+### 3. Customer Revenue Analysis (INNER JOIN + GROUP BY)
 ```sql
 SELECT c.name,
-       c.city,
-       ROUND(SUM(o.total), 2) AS revenue
+       c.state,
+       COUNT(*) AS total_orders,
+       SUM(o.total) AS revenue
 FROM customers c
-JOIN orders o
+INNER JOIN orders o
 ON c.customer_id = o.id
-GROUP BY c.name, c.city
+GROUP BY c.name, c.state
 ORDER BY revenue DESC
 LIMIT 5;
 ```
-| name | city | revenue (Rs) |
-|---|---|---|
-| Poo | Mumbai | Rs 16,835.00 |
-| Pri | Mumbai | Rs 11,885.00 |
-| Kiv | Dimapur | Rs 10,320.00 |
-| Sri | Chittoor | Rs 9,411.00 |
-| Ash | Bangalore | Rs 8,449.00 |
+| name | state | total_orders | revenue (Rs) |
+|---|---|---|---|
+| Poo | Maharashtra | 13 | 27,161.00 |
+| Pri | Maharashtra | 5 | 13,403.00 |
+| San | Karnataka | 8 | 12,630.00 |
+| Sri | Andhra Pradesh | 6 | 12,008.00 |
+| Sne | Maharashtra | 4 | 11,559.00 |
 
 ---
 
-### 8. Order Result Segmentation (CASE WHEN)
+### 4. Order Delivery Status Breakdown by State (JOIN + GROUP BY)
+```sql
+SELECT c.state,
+       o.status,
+       COUNT(*) AS orders
+FROM customers c
+JOIN orders o
+ON c.customer_id = o.id
+GROUP BY c.state, o.status
+ORDER BY orders DESC
+LIMIT 5;
+```
+| state | status | orders |
+|---|---|---|
+| Maharashtra | Delivered | 259 |
+| Karnataka | Delivered | 162 |
+| Delhi | Delivered | 125 |
+| Tamil Nadu | Delivered | 104 |
+| Uttar Pradesh | Delivered | 91 |
+
+---
+
+### 5. Order Value Categorization (CASE WHEN Summary)
+```sql
+SELECT
+    CASE
+        WHEN total >= 2000 THEN 'High Value'
+        ELSE 'Normal Value'
+    END AS order_type,
+    COUNT(*) AS orders,
+    SUM(total) AS revenue
+FROM orders
+GROUP BY order_type;
+```
+| order_type | orders | revenue (Rs) | Share (%) |
+|---|---|---|---|
+| High Value (>= Rs 2,000) | 583 | Rs 1,861,969.00 | 66.4% |
+| Normal Value (< Rs 2,000) | 1,007 | Rs 941,037.00 | 33.6% |
+
+---
+
+### 6. Order Result Segmentation (CASE WHEN)
 ```sql
 SELECT
     CASE
         WHEN status = 'Delivered' THEN 'Successful'
         ELSE 'Failed/Returned'
-    END AS result,
-    COUNT(*) AS orders
+    END AS order_result,
+    COUNT(*) AS total_orders
 FROM orders
-GROUP BY result;
+GROUP BY order_result;
 ```
-| result | orders | Percentage |
+| order_result | total_orders | Percentage |
 |---|---|---|
 | Successful | 1,401 | 88.1% |
 | Failed/Returned | 189 | 11.9% |
 
 ---
 
-### 9. Advanced CASE WHEN + JOIN (Order Category Distribution by State)
+### 7. Payment Channel Segmentation (CASE WHEN)
+```sql
+SELECT
+    CASE
+        WHEN iscod = TRUE THEN 'Cash on Delivery'
+        ELSE 'Prepaid'
+    END AS payment_type,
+    COUNT(*) AS orders,
+    SUM(total) AS revenue
+FROM orders
+GROUP BY payment_type;
+```
+| payment_type | orders | revenue (Rs) | Share (%) |
+|---|---|---|---|
+| Cash on Delivery | 1,012 | Rs 1,674,054.00 | 59.7% |
+| Prepaid | 578 | Rs 1,128,952.00 | 40.3% |
+
+---
+
+### 8. Advanced CASE WHEN + JOIN (Order Category Distribution by State)
 ```sql
 SELECT c.state,
        CASE
@@ -238,10 +237,10 @@ LIMIT 5;
 
 ## Key Business Insights
 
-1. Delivery Success Rate: 88.1% of orders (1,401 out of 1,590) were successfully delivered, while 11.9% (189 orders) resulted in returns/RTO.
-2. Payment Method Dependency: Cash on Delivery (COD) generated Rs 1,674,054.00 (59.7% of revenue) across 1,012 orders, compared to Rs 1,128,952.00 (40.3%) from 578 Prepaid orders.
-3. Top Product Category: One Week Weight-Loss (Peach) generated the highest volume with 277 orders.
-4. Top Revenue Cities: Customer Poo in Mumbai led individual customer revenue with Rs 16,835.00.
+1. Revenue Concentration: High Value orders (>= Rs 2,000) represent only 36.7% of order volume (583 orders) but account for 66.4% of total revenue (Rs 1.86M out of Rs 2.80M).
+2. Delivery Success Rate: 88.1% of orders (1,401 out of 1,590) were successfully delivered, while 11.9% (189 orders) resulted in returns/RTO.
+3. Payment Method Dependency: Cash on Delivery (COD) generated Rs 1,674,054.00 (59.7% of revenue) across 1,012 orders, compared to Rs 1,128,952.00 (40.3%) from 578 Prepaid orders.
+4. Top Customer Revenue: Customer Poo in Maharashtra led individual customer revenue with Rs 27,161.00 across 13 orders.
 
 ---
 
@@ -260,9 +259,9 @@ Key Technical Skills Applied:
 
 Key Analytical Findings:
 - Total Revenue Generated: Rs 2.80M across 1,590 transactions.
+- High Value Revenue Dominance: High Value orders (>= Rs 2,000) account for 66.4% of total revenue (Rs 1.86M).
 - Delivery Success Rate: 88.1% of orders (1,401) delivered, while 11.9% (189) resulted in returns/RTO.
 - Revenue by Payment Type: Cash on Delivery (COD) accounts for 59.7% of total revenue (Rs 1.67M out of Rs 2.80M).
-- Geographic Revenue Leaders: Maharashtra (284 orders) and Karnataka (186 orders) generated highest volume across both High Value (>= Rs 2,000) and Normal Value segments.
 
 GitHub Repository:
 https://github.com/Nirrajkadam/11_Days_11_SQL_Problems/tree/main/Day3_Ecommerce_JOINs_CaseWhen
@@ -277,5 +276,5 @@ https://github.com/Nirrajkadam/11_Days_11_SQL_Problems/tree/main/Day3_Ecommerce_
 - Relational Tables Created (orders, customers)
 - 1,590 Orders Imported via \copy
 - All JOIN and CASE WHEN Queries Executed
-- Terminal Screenshots Saved
+- All 10 Terminal Screenshots Saved
 - Git Commit Completed

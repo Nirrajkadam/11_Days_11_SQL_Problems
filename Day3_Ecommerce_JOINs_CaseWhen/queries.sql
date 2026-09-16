@@ -107,49 +107,80 @@ INNER JOIN orders o
 ON c.customer_id = o.id
 LIMIT 20;
 
--- Query 11: Top Customers by Revenue (JOIN + GROUP BY)
+-- Query 11: Top Customers by Revenue (JOIN + GROUP BY Name & State)
 SELECT c.name,
-       c.city,
-       ROUND(SUM(o.total), 2) AS revenue
+       c.state,
+       COUNT(*) AS total_orders,
+       SUM(o.total) AS revenue
 FROM customers c
-JOIN orders o
+INNER JOIN orders o
 ON c.customer_id = o.id
-GROUP BY c.name, c.city
+GROUP BY c.name, c.state
 ORDER BY revenue DESC
 LIMIT 10;
 
--- Query 12: State Revenue Analysis using JOIN
+-- Query 12: LEFT JOIN Operation
+SELECT c.customer_id,
+       c.name,
+       o.product_name
+FROM customers c
+LEFT JOIN orders o
+ON c.customer_id = o.id
+LIMIT 20;
+
+-- Query 13: Order Delivery Status Breakdown by State (JOIN + GROUP BY)
 SELECT c.state,
-       COUNT(o.id) AS orders,
-       ROUND(SUM(o.total), 2) AS revenue
+       o.status,
+       COUNT(*) AS orders
 FROM customers c
 JOIN orders o
 ON c.customer_id = o.id
-GROUP BY c.state
-ORDER BY revenue DESC;
+GROUP BY c.state, o.status
+ORDER BY orders DESC;
 
--- Query 13: Order Result Segmentation (CASE WHEN)
+-- Query 14: Order Value Categorization (CASE WHEN)
+SELECT id,
+       total,
+       CASE
+           WHEN total >= 2000 THEN 'High Value'
+           ELSE 'Normal Value'
+       END AS order_type
+FROM orders
+LIMIT 20;
+
+-- Query 15: High Value vs Normal Value Summary (CASE WHEN + Aggregations)
+SELECT
+    CASE
+        WHEN total >= 2000 THEN 'High Value'
+        ELSE 'Normal Value'
+    END AS order_type,
+    COUNT(*) AS orders,
+    SUM(total) AS revenue
+FROM orders
+GROUP BY order_type;
+
+-- Query 16: Order Delivery Result Segmentation (CASE WHEN)
 SELECT
     CASE
         WHEN status = 'Delivered' THEN 'Successful'
         ELSE 'Failed/Returned'
-    END AS result,
-    COUNT(*) AS orders
+    END AS order_result,
+    COUNT(*) AS total_orders
 FROM orders
-GROUP BY result;
+GROUP BY order_result;
 
--- Query 14: Payment Channel Segmentation (CASE WHEN)
+-- Query 17: Payment Channel Segmentation (CASE WHEN)
 SELECT
     CASE
-        WHEN iscod = TRUE THEN 'COD'
+        WHEN iscod = TRUE THEN 'Cash on Delivery'
         ELSE 'Prepaid'
     END AS payment_type,
-    COUNT(*) AS total_orders,
-    ROUND(SUM(total), 2) AS revenue
+    COUNT(*) AS orders,
+    SUM(total) AS revenue
 FROM orders
 GROUP BY payment_type;
 
--- Query 15: Order Category by State (Advanced CASE WHEN + JOIN)
+-- Query 18: Advanced Order Category by State (CASE WHEN + JOIN)
 SELECT c.state,
        CASE
            WHEN o.total >= 2000 THEN 'High Value'
@@ -160,5 +191,4 @@ FROM customers c
 JOIN orders o
 ON c.customer_id = o.id
 GROUP BY c.state, order_category
-ORDER BY orders DESC
-LIMIT 10;
+ORDER BY orders DESC;
