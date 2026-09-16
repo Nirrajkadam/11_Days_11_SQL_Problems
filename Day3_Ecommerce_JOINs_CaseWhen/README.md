@@ -1,7 +1,7 @@
 # Day 3: E-Commerce Data Analytics (SQL JOINs and CASE WHEN Logic)
 
 Welcome to Day 3 of the 11 Days 11 SQL Problems Challenge.
-In Day 3, we analyzed an E-Commerce dataset of 1,590 orders in PostgreSQL database day3_ecommerce_analysis. We built a relational customer table, performed SQL JOIN operations (INNER JOIN, LEFT JOIN), and implemented business conditional logic using CASE WHEN statements.
+In Day 3, we analyzed an E-Commerce dataset of 1,590 orders in PostgreSQL database day3_ecommerce_analysis. We built a relational customer table, performed SQL JOIN operations (INNER JOIN, LEFT JOIN), implemented business conditional logic using CASE WHEN statements, and calculated exact percentage metrics using SQL Subqueries.
 
 ---
 
@@ -22,7 +22,8 @@ Day3_Ecommerce_JOINs_CaseWhen
 │   ├── 07_customer_revenue_state_join.png
 │   ├── 08_high_value_case_summary.png
 │   ├── 09_id_order_type_case_limit20.png
-│   └── 10_advanced_case_join_full.png
+│   ├── 10_advanced_case_join_full.png
+│   └── 11_status_percentage_subquery.png
 └── dataset/
     ├── OrdersCleaned_UTF8.csv
     └── schema_and_data.sql
@@ -85,7 +86,28 @@ SELECT ROUND(SUM(total), 2) AS total_revenue FROM orders;
 
 ---
 
-### 2. Relational Table Verification and INNER JOIN
+### 2. Order Status Percentage Calculation (Subquery in SELECT)
+```sql
+SELECT status,
+       COUNT(*) AS orders,
+       ROUND(
+         COUNT(*)*100.0/
+         (SELECT COUNT(*) FROM orders),
+         2
+       ) AS percentage
+FROM orders
+GROUP BY status
+ORDER BY orders DESC;
+```
+| status | orders | percentage (%) |
+|---|---|---|
+| Delivered | 1,401 | 88.11% |
+| Returned | 187 | 11.76% |
+| RTO | 2 | 0.13% |
+
+---
+
+### 3. Relational Table Verification and INNER JOIN
 ```sql
 SELECT COUNT(*) FROM customers;
 
@@ -109,7 +131,7 @@ LIMIT 5;
 
 ---
 
-### 3. Customer Revenue Analysis (INNER JOIN + GROUP BY)
+### 4. Customer Revenue Analysis (INNER JOIN + GROUP BY)
 ```sql
 SELECT c.name,
        c.state,
@@ -132,28 +154,6 @@ LIMIT 5;
 
 ---
 
-### 4. Order Delivery Status Breakdown by State (JOIN + GROUP BY)
-```sql
-SELECT c.state,
-       o.status,
-       COUNT(*) AS orders
-FROM customers c
-JOIN orders o
-ON c.customer_id = o.id
-GROUP BY c.state, o.status
-ORDER BY orders DESC
-LIMIT 5;
-```
-| state | status | orders |
-|---|---|---|
-| Maharashtra | Delivered | 259 |
-| Karnataka | Delivered | 162 |
-| Delhi | Delivered | 125 |
-| Tamil Nadu | Delivered | 104 |
-| Uttar Pradesh | Delivered | 91 |
-
----
-
 ### 5. Order Value Categorization (CASE WHEN Summary)
 ```sql
 SELECT
@@ -173,25 +173,7 @@ GROUP BY order_type;
 
 ---
 
-### 6. Order Result Segmentation (CASE WHEN)
-```sql
-SELECT
-    CASE
-        WHEN status = 'Delivered' THEN 'Successful'
-        ELSE 'Failed/Returned'
-    END AS order_result,
-    COUNT(*) AS total_orders
-FROM orders
-GROUP BY order_result;
-```
-| order_result | total_orders | Percentage |
-|---|---|---|
-| Successful | 1,401 | 88.1% |
-| Failed/Returned | 189 | 11.9% |
-
----
-
-### 7. Payment Channel Segmentation (CASE WHEN)
+### 6. Payment Channel Segmentation (CASE WHEN)
 ```sql
 SELECT
     CASE
@@ -210,36 +192,11 @@ GROUP BY payment_type;
 
 ---
 
-### 8. Advanced CASE WHEN + JOIN (Order Category Distribution by State)
-```sql
-SELECT c.state,
-       CASE
-           WHEN o.total >= 2000 THEN 'High Value'
-           ELSE 'Normal Value'
-       END AS order_category,
-       COUNT(*) AS orders
-FROM customers c
-JOIN orders o
-ON c.customer_id = o.id
-GROUP BY c.state, order_category
-ORDER BY orders DESC
-LIMIT 5;
-```
-| state | order_category | orders |
-|---|---|---|
-| Maharashtra | Normal Value | 182 |
-| Karnataka | Normal Value | 112 |
-| Maharashtra | High Value | 102 |
-| Delhi | Normal Value | 87 |
-| Karnataka | High Value | 74 |
-
----
-
 ## Key Business Insights
 
-1. Revenue Concentration: High Value orders (>= Rs 2,000) represent only 36.7% of order volume (583 orders) but account for 66.4% of total revenue (Rs 1.86M out of Rs 2.80M).
-2. Delivery Success Rate: 88.1% of orders (1,401 out of 1,590) were successfully delivered, while 11.9% (189 orders) resulted in returns/RTO.
-3. Payment Method Dependency: Cash on Delivery (COD) generated Rs 1,674,054.00 (59.7% of revenue) across 1,012 orders, compared to Rs 1,128,952.00 (40.3%) from 578 Prepaid orders.
+1. Exact Delivery Breakdown (Subquery Analytics): Delivered orders represent 88.11% (1,401 orders), Returned orders represent 11.76% (187 orders), and Return to Origin (RTO) represents 0.13% (2 orders).
+2. Revenue Concentration: High Value orders (>= Rs 2,000) represent 66.4% of total revenue (Rs 1.86M out of Rs 2.80M).
+3. Payment Method Dependency: Cash on Delivery (COD) accounts for 59.7% of total revenue (Rs 1,674,054.00 across 1,012 orders).
 4. Top Customer Revenue: Customer Poo in Maharashtra led individual customer revenue with Rs 27,161.00 across 13 orders.
 
 ---
@@ -249,19 +206,18 @@ LIMIT 5;
 ```text
 Day 3 of #11Days11SQLProblems: E-Commerce Analytics using SQL JOINs & CASE WHEN Logic
 
-Today I completed Day 3 of my 11 Days SQL Challenge by performing relational table modeling, JOIN operations, and conditional segmentation on an E-Commerce dataset of 1,590 orders in PostgreSQL.
+Today I completed Day 3 of my 11 Days SQL Challenge by performing relational table modeling, JOIN operations, CASE WHEN logic, and Subquery percentage calculations on an E-Commerce dataset of 1,590 orders in PostgreSQL.
 
 Key Technical Skills Applied:
 - Relational Modeling (CREATE TABLE AS SELECT DISTINCT)
 - SQL JOIN Operations (INNER JOIN, LEFT JOIN)
-- Multi-column Aggregations (SUM, COUNT, GROUP BY)
+- Subqueries in SELECT clause for dynamic percentage calculations
 - Conditional Business Logic (CASE WHEN ... THEN ... ELSE ... END)
 
 Key Analytical Findings:
-- Total Revenue Generated: Rs 2.80M across 1,590 transactions.
-- High Value Revenue Dominance: High Value orders (>= Rs 2,000) account for 66.4% of total revenue (Rs 1.86M).
-- Delivery Success Rate: 88.1% of orders (1,401) delivered, while 11.9% (189) resulted in returns/RTO.
-- Revenue by Payment Type: Cash on Delivery (COD) accounts for 59.7% of total revenue (Rs 1.67M out of Rs 2.80M).
+- Delivery Success Rate: 88.11% (1,401 orders) delivered, 11.76% (187 orders) returned, 0.13% (2 orders) RTO.
+- High Value Revenue Share: High Value orders (>= Rs 2,000) generated 66.4% of total revenue (Rs 1.86M out of Rs 2.80M).
+- Payment Revenue Breakdown: Cash on Delivery (COD) generated 59.7% of total revenue (Rs 1.67M).
 
 GitHub Repository:
 https://github.com/Nirrajkadam/11_Days_11_SQL_Problems/tree/main/Day3_Ecommerce_JOINs_CaseWhen
@@ -275,6 +231,6 @@ https://github.com/Nirrajkadam/11_Days_11_SQL_Problems/tree/main/Day3_Ecommerce_
 - Database Created (day3_ecommerce_analysis)
 - Relational Tables Created (orders, customers)
 - 1,590 Orders Imported via \copy
-- All JOIN and CASE WHEN Queries Executed
-- All 10 Terminal Screenshots Saved
+- All JOIN, CASE WHEN, and Subquery Percentage Queries Executed
+- All 11 Terminal Screenshots Saved
 - Git Commit Completed

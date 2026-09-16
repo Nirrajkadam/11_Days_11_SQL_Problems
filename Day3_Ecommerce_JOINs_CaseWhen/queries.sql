@@ -192,3 +192,15 @@ JOIN orders o
 ON c.customer_id = o.id
 GROUP BY c.state, order_category
 ORDER BY orders DESC;
+
+-- Query 19: Order Status Percentage Calculation (Subquery in SELECT)
+SELECT status,
+       COUNT(*) AS orders,
+       ROUND(
+         COUNT(*)*100.0/
+         (SELECT COUNT(*) FROM orders),
+         2
+       ) AS percentage
+FROM orders
+GROUP BY status
+ORDER BY orders DESC;
