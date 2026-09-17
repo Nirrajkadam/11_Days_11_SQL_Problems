@@ -17,7 +17,11 @@ Day4_Subqueries_CTE_WindowFunctions
 │   ├── 02_orders_above_avg_subquery.png
 │   ├── 03_having_revenue_and_products.png
 │   ├── 04_cte_state_revenue.png
-│   └── 05_cte_filter_and_rank.png
+│   ├── 05_cte_filter_and_rank.png
+│   ├── 06_top5_states_cte_and_product_rank.png
+│   ├── 07_customer_spending_dense_rank.png
+│   ├── 08_running_total_revenue_states.png
+│   └── 09_revenue_contribution_percentage.png
 └── dataset/
     ├── OrdersCleaned_UTF8.csv
     └── schema_and_data.sql
@@ -129,24 +133,7 @@ ORDER BY total_orders DESC;
 
 ---
 
-### 4. CTE (WITH Clause): Revenue by State
-```sql
-WITH state_revenue AS
-(
-    SELECT state,
-           SUM(total) AS revenue
-    FROM orders
-    GROUP BY state
-)
-SELECT *
-FROM state_revenue
-ORDER BY revenue DESC;
-```
-Result: Successfully encapsulated state aggregations inside modular CTE expression.
-
----
-
-### 5. CTE + Filter: States Generating Revenue > Rs 200,000
+### 4. CTE (WITH Clause) + Filter: Revenue > Rs 200,000
 ```sql
 WITH state_revenue AS
 (
@@ -169,15 +156,21 @@ ORDER BY revenue DESC;
 
 ---
 
-### 6. State Wise Revenue Ranking using RANK()
+### 5. Top 5 Revenue States via CTE + RANK()
 ```sql
-SELECT state,
-       SUM(total) AS revenue,
-       RANK() OVER (ORDER BY SUM(total) DESC) AS state_rank
-FROM orders
-GROUP BY state;
+WITH state_revenue AS
+(
+    SELECT state,
+           SUM(total) AS revenue,
+           RANK() OVER (ORDER BY SUM(total) DESC) AS rank_no
+    FROM orders
+    GROUP BY state
+)
+SELECT *
+FROM state_revenue
+WHERE rank_no <= 5;
 ```
-| state | revenue (Rs) | state_rank |
+| state | revenue (Rs) | rank_no |
 |---|---|---|
 | Maharashtra | Rs 488,534.00 | 1 |
 | Karnataka | Rs 340,498.00 | 2 |
@@ -187,7 +180,7 @@ GROUP BY state;
 
 ---
 
-### 7. Product Revenue Ranking using RANK()
+### 6. Product Revenue Ranking using RANK()
 ```sql
 SELECT product_name,
        SUM(total) AS revenue,
@@ -205,7 +198,7 @@ GROUP BY product_name;
 
 ---
 
-### 8. Customer Spending Ranking using DENSE_RANK()
+### 7. Customer Spending Ranking using DENSE_RANK()
 ```sql
 SELECT name,
        SUM(total) AS spending,
@@ -220,6 +213,24 @@ GROUP BY name;
 | San | Rs 61,911.00 | 3 |
 | Man | Rs 60,009.00 | 4 |
 | Poo | Rs 48,848.00 | 5 |
+
+---
+
+### 8. Running Revenue Total Across States
+```sql
+SELECT state,
+       SUM(total) AS revenue,
+       SUM(SUM(total)) OVER (ORDER BY SUM(total) DESC) AS running_revenue
+FROM orders
+GROUP BY state;
+```
+| state | revenue (Rs) | running_revenue (Rs) |
+|---|---|---|
+| Maharashtra | Rs 488,534.00 | Rs 488,534.00 |
+| Karnataka | Rs 340,498.00 | Rs 829,032.00 |
+| Delhi | Rs 222,527.00 | Rs 1,051,559.00 |
+| Tamil Nadu | Rs 214,323.00 | Rs 1,265,882.00 |
+| Uttar Pradesh | Rs 198,235.00 | Rs 1,464,117.00 |
 
 ---
 
@@ -243,42 +254,6 @@ ORDER BY revenue DESC;
 | Delhi | Rs 222,527.00 | 7.94% |
 | Tamil Nadu | Rs 214,323.00 | 7.65% |
 | Uttar Pradesh | Rs 198,235.00 | 7.07% |
-
----
-
-### 10. Running Revenue Total Across States
-```sql
-SELECT state,
-       SUM(total) AS revenue,
-       SUM(SUM(total)) OVER (ORDER BY SUM(total) DESC) AS running_revenue
-FROM orders
-GROUP BY state;
-```
-| state | revenue (Rs) | running_revenue (Rs) |
-|---|---|---|
-| Maharashtra | Rs 488,534.00 | Rs 488,534.00 |
-| Karnataka | Rs 340,498.00 | Rs 829,032.00 |
-| Delhi | Rs 222,527.00 | Rs 1,051,559.00 |
-| Tamil Nadu | Rs 214,323.00 | Rs 1,265,882.00 |
-| Uttar Pradesh | Rs 198,235.00 | Rs 1,464,117.00 |
-
----
-
-### 11. Previous State Revenue Comparison using LAG()
-```sql
-SELECT state,
-       SUM(total) AS revenue,
-       LAG(SUM(total)) OVER(ORDER BY SUM(total) DESC) AS previous_revenue
-FROM orders
-GROUP BY state;
-```
-| state | revenue (Rs) | previous_revenue (Rs) |
-|---|---|---|
-| Maharashtra | Rs 488,534.00 | NULL |
-| Karnataka | Rs 340,498.00 | Rs 488,534.00 |
-| Delhi | Rs 222,527.00 | Rs 340,498.00 |
-| Tamil Nadu | Rs 214,323.00 | Rs 222,527.00 |
-| Uttar Pradesh | Rs 198,235.00 | Rs 214,323.00 |
 
 ---
 
