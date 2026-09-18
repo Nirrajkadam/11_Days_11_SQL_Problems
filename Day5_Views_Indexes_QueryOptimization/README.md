@@ -16,7 +16,12 @@ Day5_Views_Indexes_QueryOptimization
 │   ├── 01_copy_and_delivered_orders_view.png
 │   ├── 02_state_revenue_view.png
 │   ├── 03_product_revenue_view.png
-│   └── 04_indexes_creation_and_pg_indexes.png
+│   ├── 04_indexes_creation_and_pg_indexes.png
+│   ├── 05_explain_analyze_state_and_status.png
+│   ├── 06_composite_index_explain_analyze.png
+│   ├── 07_top10_orders_and_revenue_by_status.png
+│   ├── 08_check_delivered_orders_view.png
+│   └── 09_karnataka_explain_and_product_revenue_view.png
 └── dataset/
     ├── OrdersCleaned_UTF8.csv
     └── schema_and_data.sql
@@ -141,27 +146,63 @@ WHERE tablename = 'orders';
 
 ## Query Optimization Evaluation (EXPLAIN ANALYZE)
 
+### Test 1: State Filter Diagnostics (`state = 'Maharashtra'`)
 ```sql
--- Execution Plan Test for State & Status Filter
+EXPLAIN ANALYZE
+SELECT *
+FROM orders
+WHERE state = 'Maharashtra';
+```
+- Query Access Path: Bitmap Heap Scan on orders (via Bitmap Index Scan on `idx_state_status`)
+- Execution Time: 0.283 ms
+- Rows Returned: 284
+
+### Test 2: Composite Index Diagnostics (`state = 'Maharashtra' AND status = 'Delivered'`)
+```sql
 EXPLAIN ANALYZE
 SELECT *
 FROM orders
 WHERE state = 'Maharashtra'
 AND status = 'Delivered';
 ```
+- Query Access Path: Bitmap Heap Scan on orders (via Bitmap Index Scan on `idx_state_status`)
+- Execution Time: 0.320 ms
+- Rows Returned: 259
 
-- Optimization Impact: Utilizing B-Tree indexes enables index scan access paths over full sequential table scans on filtered attributes.
-- Revenue Breakdown by Status:
-  - Delivered: Rs 2,494,323.00 (1,401 orders)
-  - Returned: Rs 304,388.00 (187 orders)
-  - RTO: Rs 4,295.00 (2 orders)
+### Test 3: Karnataka State Lookup Diagnostics (`state = 'Karnataka'`)
+```sql
+EXPLAIN ANALYZE
+SELECT *
+FROM orders
+WHERE state = 'Karnataka';
+```
+- Query Access Path: Bitmap Index Scan on `idx_state_status`
+- Execution Time: 0.186 ms
+- Rows Returned: 186
+
+---
+
+## Financial Overview by Order Status
+
+```sql
+SELECT status,
+       SUM(total) AS revenue
+FROM orders
+GROUP BY status
+ORDER BY revenue DESC;
+```
+| status | revenue (Rs) | Percentage |
+|---|---|---|
+| Delivered | Rs 2,494,323.00 | 89.0% |
+| Returned | Rs 304,388.00 | 10.9% |
+| RTO | Rs 4,295.00 | 0.1% |
 
 ---
 
 ## Key Business Insights
 
 1. Virtualization Benefits: Abstracting complex business logic into reusable views (`delivered_orders`, `state_revenue`, `product_revenue`) simplifies reporting queries and enforces consistent data access definitions.
-2. Query Acceleration: Adding single-column and composite indexes (`idx_state_status`) optimizes lookup latency for high-frequency filtering conditions across state and order status attributes.
+2. Query Acceleration: Adding single-column and composite indexes (`idx_state_status`) optimizes lookup latency to sub-millisecond execution times (0.186 ms - 0.320 ms).
 3. Financial Delivery Distribution: Delivered orders account for Rs 2.49M (89.0% of total financial volume), whereas returned/RTO orders account for Rs 308.6k (11.0%).
 
 ---
@@ -182,7 +223,7 @@ Key Technical Skills Applied:
 Key Technical Findings:
 - Database Views: Built dedicated analytical views (delivered_orders, state_revenue, product_revenue) to encapsulate business aggregation logic.
 - Indexing Strategy: Created composite multi-column B-Tree index (state, status) to optimize multi-attribute filter queries.
-- Performance Tuning: Evaluated execution plans with EXPLAIN ANALYZE to transition from sequential scans to efficient index-driven access paths.
+- Performance Tuning: Evaluated execution plans with EXPLAIN ANALYZE to transition from sequential scans to efficient index-driven access paths with sub-millisecond execution times (0.186 ms).
 
 GitHub Repository:
 https://github.com/Nirrajkadam/11_Days_11_SQL_Problems/tree/main/Day5_Views_Indexes_QueryOptimization
@@ -198,5 +239,5 @@ https://github.com/Nirrajkadam/11_Days_11_SQL_Problems/tree/main/Day5_Views_Inde
 - 3 Virtual Views Created (delivered_orders, state_revenue, product_revenue)
 - 3 B-Tree Indexes Created (idx_state, idx_status, idx_state_status)
 - EXPLAIN ANALYZE Performance Diagnostics Executed
-- Terminal Screenshots Saved
+- All 9 Terminal Screenshots Saved
 - Git Commit Completed
