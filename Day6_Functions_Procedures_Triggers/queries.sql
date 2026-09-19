@@ -84,40 +84,46 @@ SELECT * FROM employees;
 -- PART 3: TRIGGERS & AUDIT LOGGING
 -- -----------------------------------------------------------------------------
 
--- Audit Table: Track Salary Modifications
-CREATE TABLE IF NOT EXISTS salary_audit (
+-- Salary Change Log Table
+CREATE TABLE salary_audit (
     audit_id SERIAL PRIMARY KEY,
-    emp_id INT NOT NULL,
-    old_salary NUMERIC(10,2) NOT NULL,
-    new_salary NUMERIC(10,2) NOT NULL,
+    emp_id INT,
+    old_salary NUMERIC,
+    new_salary NUMERIC,
     changed_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Trigger Function: Capture OLD and NEW values upon salary modification
+-- Trigger Function: Log Salary Changes
 CREATE OR REPLACE FUNCTION log_salary_change()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    INSERT INTO salary_audit (emp_id, old_salary, new_salary)
-    VALUES (OLD.emp_id, OLD.salary, NEW.salary);
+    INSERT INTO salary_audit(
+        emp_id,
+        old_salary,
+        new_salary
+    )
+    VALUES(
+        OLD.emp_id,
+        OLD.salary,
+        NEW.salary
+    );
     RETURN NEW;
 END;
 $$;
 
--- Trigger Definition: Fire AFTER UPDATE of salary column
-DROP TRIGGER IF EXISTS trg_salary_update ON employees;
-
+-- Trigger on Salary Update
 CREATE TRIGGER trg_salary_update
 AFTER UPDATE OF salary
 ON employees
 FOR EACH ROW
 EXECUTE FUNCTION log_salary_change();
 
--- Test Trigger: Update salary for employee 5 (Rohit)
+-- Test Trigger: Update Salary for Rahul (emp_id = 1)
 UPDATE employees
-SET salary = 95000
-WHERE emp_id = 5;
+SET salary = 90000
+WHERE emp_id = 1;
 
 -- Verify Audit Log Record
 SELECT * FROM salary_audit;
@@ -127,8 +133,7 @@ SELECT * FROM salary_audit;
 -- PART 4: EXTRA PRACTICE & INTERVIEW CHALLENGES
 -- -----------------------------------------------------------------------------
 
--- Extra Question 1: Tax Deduction Function (18% GST / Income Tax)
--- Function to calculate 18% tax deduction on any given amount
+-- Extra Question 1: Calculate 18% Tax
 CREATE OR REPLACE FUNCTION calculate_tax(
     amount NUMERIC
 )
@@ -136,20 +141,18 @@ RETURNS NUMERIC
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    RETURN ROUND(amount * 0.18, 2);
+    RETURN amount * 0.18;
 END;
 $$;
 
 -- Test Extra Function 1
 SELECT emp_name,
        salary,
-       calculate_tax(salary) AS tax_amount,
-       salary - calculate_tax(salary) AS net_salary
+       calculate_tax(salary) AS tax
 FROM employees;
 
 
--- Extra Question 2: Department-Specific Stored Procedure
--- Stored Procedure to increment salary by 15% specifically for IT department
+-- Extra Question 2: Increase Salary of IT Department by 15%
 CREATE OR REPLACE PROCEDURE increment_it_salary()
 LANGUAGE plpgsql
 AS $$
@@ -163,44 +166,41 @@ $$;
 -- Execute Extra Procedure 2
 CALL increment_it_salary();
 
--- Verify IT Salary Updates
-SELECT * FROM employees WHERE department = 'IT';
+-- Verify IT Department Updated Salaries
+SELECT *
+FROM employees
+WHERE department = 'IT';
 
 
--- Extra Question 3: Audit Trigger on New Employee Insert
--- Table to store employee onboarding history
-CREATE TABLE IF NOT EXISTS employee_audit (
+-- Extra Question 3: Employee Insert Audit
+CREATE TABLE employee_audit (
     audit_id SERIAL PRIMARY KEY,
-    emp_name VARCHAR(100) NOT NULL,
-    department VARCHAR(50) NOT NULL,
+    emp_name VARCHAR(100),
+    department VARCHAR(50),
     inserted_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Trigger Function: Capture New Employee Insertions
+-- Trigger Function: Log Employee Insert
 CREATE OR REPLACE FUNCTION log_new_employee()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    INSERT INTO employee_audit (emp_name, department)
-    VALUES (NEW.emp_name, NEW.department);
+    INSERT INTO employee_audit(
+        emp_name,
+        department
+    )
+    VALUES(
+        NEW.emp_name,
+        NEW.department
+    );
     RETURN NEW;
 END;
 $$;
 
--- Trigger Definition: Fire AFTER INSERT on employees
-DROP TRIGGER IF EXISTS trg_employee_insert ON employees;
-
+-- Trigger: On Employee Insert
 CREATE TRIGGER trg_employee_insert
 AFTER INSERT
 ON employees
 FOR EACH ROW
 EXECUTE FUNCTION log_new_employee();
-
--- Test Extra Trigger 3: Insert new hire
-INSERT INTO employees (emp_name, department, salary, joining_date)
-VALUES ('Karan', 'DevOps', 75000.00, '2024-02-01');
-
--- Verify Employee Audit Log
-SELECT * FROM employee_audit;
-SELECT * FROM employees WHERE emp_name = 'Karan';

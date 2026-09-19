@@ -17,7 +17,12 @@ Day6_Functions_Procedures_Triggers
 |   |-- 02_create_table_and_insert.png
 |   |-- 03_annual_salary_function.png
 |   |-- 04_bonus_function.png
-|   `-- 05_increase_salary_procedure.png
+|   |-- 05_increase_salary_procedure.png
+|   |-- 06_salary_audit_table_and_trigger_function.png
+|   |-- 07_trigger_creation_update_audit_output.png
+|   |-- 08_calculate_tax_function.png
+|   |-- 09_increment_it_salary_procedure.png
+|   `-- 10_employee_insert_audit_trigger.png
 `-- dataset/
     `-- schema_and_data.sql
 ```
@@ -169,9 +174,9 @@ Triggers automatically fire a trigger function in response to specific events (`
 ```sql
 CREATE TABLE salary_audit (
     audit_id SERIAL PRIMARY KEY,
-    emp_id INT NOT NULL,
-    old_salary NUMERIC(10,2) NOT NULL,
-    new_salary NUMERIC(10,2) NOT NULL,
+    emp_id INT,
+    old_salary NUMERIC,
+    new_salary NUMERIC,
     changed_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
@@ -183,8 +188,16 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    INSERT INTO salary_audit (emp_id, old_salary, new_salary)
-    VALUES (OLD.emp_id, OLD.salary, NEW.salary);
+    INSERT INTO salary_audit(
+        emp_id,
+        old_salary,
+        new_salary
+    )
+    VALUES(
+        OLD.emp_id,
+        OLD.salary,
+        NEW.salary
+    );
     RETURN NEW;
 END;
 $$;
@@ -199,23 +212,23 @@ EXECUTE FUNCTION log_salary_change();
 ### 3. Trigger Verification Test
 ```sql
 UPDATE employees
-SET salary = 95000.00
-WHERE emp_id = 5;
+SET salary = 90000
+WHERE emp_id = 1;
 
 SELECT * FROM salary_audit;
 ```
 
-Audit Log Record:
+Audit Log Record Captured:
 
-| audit_id | emp_id | old_salary (Rs) | new_salary (Rs) | changed_on |
+| audit_id | emp_id | old_salary | new_salary | changed_on |
 |---|---|---|---|---|
-| 1 | 5 | 88,000.00 | 95,000.00 | Current Timestamp |
+| 1 | 1 | 55000.00 | 90000.00 | 2026-09-19 12:21:56.387851 |
 
 ---
 
 ## Part 4: Extra Practice & Interview Scenarios
 
-### Scenario 1: Tax Deduction UDF (18%)
+### Scenario 1: Tax Calculation UDF (18%)
 ```sql
 CREATE OR REPLACE FUNCTION calculate_tax(
     amount NUMERIC
@@ -224,18 +237,29 @@ RETURNS NUMERIC
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    RETURN ROUND(amount * 0.18, 2);
+    RETURN amount * 0.18;
 END;
 $$;
 
 SELECT emp_name,
        salary,
-       calculate_tax(salary) AS tax_deduction,
-       salary - calculate_tax(salary) AS net_in_hand
+       calculate_tax(salary) AS tax
 FROM employees;
 ```
 
-### Scenario 2: Department-Targeted Increment Procedure
+Output:
+
+| emp_name | salary (Rs) | tax (Rs) |
+|---|---|---|
+| Priya | 49,500.00 | 8,910.0000 |
+| Amit | 77,000.00 | 13,860.0000 |
+| Sneha | 66,000.00 | 11,880.0000 |
+| Rohit | 88,000.00 | 15,840.0000 |
+| Rahul | 90,000.00 | 16,200.0000 |
+
+---
+
+### Scenario 2: Department-Targeted Increment Procedure (IT 15%)
 ```sql
 CREATE OR REPLACE PROCEDURE increment_it_salary()
 LANGUAGE plpgsql
@@ -248,14 +272,28 @@ END;
 $$;
 
 CALL increment_it_salary();
+
+SELECT *
+FROM employees
+WHERE department = 'IT';
 ```
 
-### Scenario 3: Employee Onboarding Insert Trigger
+Output:
+
+| emp_id | emp_name | department | salary (Rs) | joining_date |
+|---|---|---|---|---|
+| 3 | Amit | IT | 88,550.00 | 2021-03-20 |
+| 5 | Rohit | IT | 101,200.00 | 2019-08-25 |
+| 1 | Rahul | IT | 103,500.00 | 2023-01-15 |
+
+---
+
+### Scenario 3: Employee Onboarding Insert Audit Trigger
 ```sql
 CREATE TABLE employee_audit (
     audit_id SERIAL PRIMARY KEY,
-    emp_name VARCHAR(100) NOT NULL,
-    department VARCHAR(50) NOT NULL,
+    emp_name VARCHAR(100),
+    department VARCHAR(50),
     inserted_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -264,8 +302,14 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    INSERT INTO employee_audit (emp_name, department)
-    VALUES (NEW.emp_name, NEW.department);
+    INSERT INTO employee_audit(
+        emp_name,
+        department
+    )
+    VALUES(
+        NEW.emp_name,
+        NEW.department
+    );
     RETURN NEW;
 END;
 $$;
@@ -300,6 +344,11 @@ All steps and executions were verified in the PostgreSQL terminal:
 3. `03_annual_salary_function.png`: Annual salary function creation and verification
 4. `04_bonus_function.png`: 10% bonus calculation function execution
 5. `05_increase_salary_procedure.png`: Procedure creation, execution (`CALL`), and verification
+6. `06_salary_audit_table_and_trigger_function.png`: Salary audit table definition and `log_salary_change()` trigger function
+7. `07_trigger_creation_update_audit_output.png`: Salary update trigger binding, execution, and audit log verification
+8. `08_calculate_tax_function.png`: 18% tax calculation function and query results
+9. `09_increment_it_salary_procedure.png`: Department-targeted 15% salary raise stored procedure and results
+10. `10_employee_insert_audit_trigger.png`: Employee insert audit table, trigger function, and trigger binding
 
 ---
 
@@ -325,9 +374,9 @@ Key Technical Skills Applied:
 - Enterprise Audit Logging (Change Data Capture capturing OLD vs NEW values)
 
 Key Technical Implementations:
-- User-Defined Functions: Created annual_salary() and add_bonus() to standardize payroll logic directly inside SELECT queries.
-- Stored Procedures: Implemented increase_salary() to manage atomic, parameter-driven salary revisions across employee records.
-- Automated Audit Logging: Configured trg_salary_update trigger with a dedicated salary_audit table to log historical wage revisions automatically with timestamps.
+- User-Defined Functions: Created annual_salary(), add_bonus(), and calculate_tax() to standardize payroll and tax logic directly inside SELECT queries.
+- Stored Procedures: Implemented increase_salary() and department-specific increment_it_salary() to manage atomic, parameter-driven salary revisions across employee records.
+- Automated Audit Logging: Configured trg_salary_update and trg_employee_insert triggers with dedicated audit tables to log historical wage revisions and new onboarding events automatically with timestamps.
 
 GitHub Repository:
 https://github.com/Nirrajkadam/11_Days_11_SQL_Problems/tree/main/Day6_Functions_Procedures_Triggers
@@ -343,7 +392,9 @@ https://github.com/Nirrajkadam/11_Days_11_SQL_Problems/tree/main/Day6_Functions_
 - Function 1 Created (`annual_salary`) & Verified
 - Function 2 Created (`add_bonus`) & Verified
 - Stored Procedure Created (`increase_salary`) & Executed
-- Salary Audit Table & Trigger Configured (`log_salary_change`)
-- Extra Practice Questions Documented
-- All Terminal Screenshots Verified and Linked
+- Salary Audit Table & Trigger Configured (`log_salary_change`) & Tested
+- Extra Question 1: Tax Calculation UDF (`calculate_tax`) Executed
+- Extra Question 2: Department Increment Procedure (`increment_it_salary`) Executed
+- Extra Question 3: Employee Onboarding Insert Trigger (`log_new_employee`) Configured
+- All 10 Terminal Screenshots Verified and Linked
 - Git Repository Synchronized and Pushed
