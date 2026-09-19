@@ -204,3 +204,11 @@ AFTER INSERT
 ON employees
 FOR EACH ROW
 EXECUTE FUNCTION log_new_employee();
+
+-- Test Extra Trigger 3: Insert new hire
+INSERT INTO employees(emp_name, department, salary, joining_date)
+VALUES ('Neeraj', 'Data Engineering', 75000, '2025-01-01');
+
+-- Verify Employee Audit Log
+SELECT * FROM employee_audit;
+

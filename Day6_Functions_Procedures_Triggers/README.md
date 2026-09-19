@@ -22,7 +22,8 @@ Day6_Functions_Procedures_Triggers
 |   |-- 07_trigger_creation_update_audit_output.png
 |   |-- 08_calculate_tax_function.png
 |   |-- 09_increment_it_salary_procedure.png
-|   `-- 10_employee_insert_audit_trigger.png
+|   |-- 10_employee_insert_audit_trigger.png
+|   `-- 11_employee_insert_trigger_verification.png
 `-- dataset/
     `-- schema_and_data.sql
 ```
@@ -319,7 +320,21 @@ AFTER INSERT
 ON employees
 FOR EACH ROW
 EXECUTE FUNCTION log_new_employee();
+
+INSERT INTO employees
+(emp_name, department, salary, joining_date)
+VALUES
+('Neeraj', 'Data Engineering', 75000, '2025-01-01');
+
+SELECT *
+FROM employee_audit;
 ```
+
+Audit Log Output Captured:
+
+| audit_id | emp_name | department | inserted_on |
+|---|---|---|---|
+| 1 | Neeraj | Data Engineering | 2026-09-19 12:30:39.754586 |
 
 ---
 
@@ -349,6 +364,7 @@ All steps and executions were verified in the PostgreSQL terminal:
 8. `08_calculate_tax_function.png`: 18% tax calculation function and query results
 9. `09_increment_it_salary_procedure.png`: Department-targeted 15% salary raise stored procedure and results
 10. `10_employee_insert_audit_trigger.png`: Employee insert audit table, trigger function, and trigger binding
+11. `11_employee_insert_trigger_verification.png`: Employee insert trigger firing upon inserting 'Neeraj' and verifying employee_audit record
 
 ---
 
@@ -395,6 +411,6 @@ https://github.com/Nirrajkadam/11_Days_11_SQL_Problems/tree/main/Day6_Functions_
 - Salary Audit Table & Trigger Configured (`log_salary_change`) & Tested
 - Extra Question 1: Tax Calculation UDF (`calculate_tax`) Executed
 - Extra Question 2: Department Increment Procedure (`increment_it_salary`) Executed
-- Extra Question 3: Employee Onboarding Insert Trigger (`log_new_employee`) Configured
-- All 10 Terminal Screenshots Verified and Linked
+- Extra Question 3: Employee Onboarding Insert Trigger (`log_new_employee`) Configured & Verified
+- All 11 Terminal Screenshots Verified and Linked
 - Git Repository Synchronized and Pushed
