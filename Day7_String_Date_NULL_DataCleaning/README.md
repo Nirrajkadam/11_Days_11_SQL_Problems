@@ -17,7 +17,9 @@ Day7_String_Date_NULL_DataCleaning
 |   |-- 02_upper_lower_initcap.png
 |   |-- 03_length_substring_replace.png
 |   |-- 04_trim_current_date_timestamp_age.png
-|   `-- 05_extract_coalesce_nullif.png
+|   |-- 05_extract_coalesce_nullif.png
+|   |-- 06_salary_classification_case_when.png
+|   `-- 07_data_cleaning_initcap_missing_emails.png
 `-- dataset/
     `-- schema_and_data.sql
 ```
@@ -314,6 +316,8 @@ All executions were verified directly in the PostgreSQL interactive terminal:
 3. `03_length_substring_replace.png`: Character length analysis, string extraction, and domain replacement
 4. `04_trim_current_date_timestamp_age.png`: Whitespace trimming, system date/time extraction, and tenure calculation with AGE()
 5. `05_extract_coalesce_nullif.png`: EXTRACT(YEAR), COALESCE() default substitution, and NULLIF() evaluation
+6. `06_salary_classification_case_when.png`: Conditional salary tier classification using CASE WHEN
+7. `07_data_cleaning_initcap_missing_emails.png`: Proper case name standardization, filtering missing emails, and aggregate null count
 
 ---
 
@@ -361,5 +365,5 @@ https://github.com/Nirrajkadam/11_Days_11_SQL_Problems/tree/main/Day7_String_Dat
 - NULL Handling Operations Verified (COALESCE, NULLIF)
 - Conditional Business Logic Implemented (CASE WHEN)
 - Data Cleaning Hygiene Queries Documented
-- All Terminal Screenshots Verified and Linked
+- All 7 Terminal Screenshots Verified and Linked
 - Git Repository Synchronized and Pushed
