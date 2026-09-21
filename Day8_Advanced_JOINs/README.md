@@ -16,7 +16,11 @@ Day8_Advanced_JOINs
 |   |-- 01_inner_join_and_left_join.png
 |   |-- 02_right_join_and_full_join.png
 |   |-- 03_anti_joins_unmatched_records.png
-|   `-- 04_self_join_employee_hierarchy.png
+|   |-- 04_self_join_employee_hierarchy.png
+|   |-- 05_cross_join_cartesian_product.png
+|   |-- 06_customer_spending_and_top_spender.png
+|   |-- 07_second_highest_spender_and_order_count.png
+|   `-- 08_repeat_customers_city_revenue_highest_order.png
 `-- dataset/
     `-- schema_and_data.sql
 ```
@@ -404,6 +408,10 @@ All queries were verified directly in the PostgreSQL terminal:
 2. `02_right_join_and_full_join.png`: RIGHT JOIN (orphaned orders) and FULL OUTER JOIN (complete union of matches and discrepancies)
 3. `03_anti_joins_unmatched_records.png`: Anti-Join patterns identifying inactive customers and invalid foreign keys
 4. `04_self_join_employee_hierarchy.png`: SELF JOIN modeling hierarchical employee-to-manager relationships
+5. `05_cross_join_cartesian_product.png`: CROSS JOIN generating full Cartesian product (25 rows)
+6. `06_customer_spending_and_top_spender.png`: Total spending per customer and top customer identification
+7. `07_second_highest_spender_and_order_count.png`: Second highest spending customer via DENSE_RANK() and order counts
+8. `08_repeat_customers_city_revenue_highest_order.png`: Repeat customers via HAVING, revenue by city, and highest single order per customer
 
 ---
 
@@ -451,5 +459,5 @@ https://github.com/Nirrajkadam/11_Days_11_SQL_Problems/tree/main/Day8_Advanced_J
 - Structural Joins Executed (SELF JOIN, CROSS JOIN)
 - Aggregation Queries Executed (Spending, Top Spender)
 - Bonus Interview Queries Implemented (DENSE_RANK, HAVING, Max Order, City Revenue)
-- All Terminal Screenshots Verified and Linked
+- All 8 Terminal Screenshots Verified and Linked
 - Git Repository Synchronized and Pushed
