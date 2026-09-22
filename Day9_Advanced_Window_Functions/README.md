@@ -19,7 +19,10 @@ Day9_Advanced_Window_Functions
 |   |-- 02_row_number_and_rank.png
 |   |-- 03_dense_rank_and_running_total.png
 |   |-- 04_lead_and_lag.png
-|   `-- 05_first_value_and_last_value.png
+|   |-- 05_first_value_and_last_value.png
+|   |-- 06_ntile_quartiles.png
+|   |-- 07_top_performer_and_region_ranking.png
+|   `-- 08_percentage_contribution_and_growth_difference.png
 `-- dataset/
     `-- schema_and_data.sql
 ```
@@ -408,6 +411,9 @@ All queries were verified directly in the PostgreSQL terminal:
 3. `03_dense_rank_and_running_total.png`: DENSE_RANK() evaluation and cumulative revenue running total
 4. `04_lead_and_lag.png`: LEAD() subsequent lookahead and LAG() previous transaction lookup
 5. `05_first_value_and_last_value.png`: FIRST_VALUE() benchmark lookup and LAST_VALUE() with explicit window framing
+6. `06_ntile_quartiles.png`: NTILE(4) dividing sales into 4 performance quartiles
+7. `07_top_performer_and_region_ranking.png`: Top performer per region using ROW_NUMBER() and region-wise RANK()
+8. `08_percentage_contribution_and_growth_difference.png`: Percentage contribution to total revenue and transaction-over-transaction growth/difference
 
 ---
 
@@ -457,5 +463,5 @@ https://github.com/Nirrajkadam/11_Days_11_SQL_Problems/tree/main/Day9_Advanced_W
 - Distribution Functions Executed (NTILE)
 - Regional Partitioning Executed (Top Performer per Region)
 - Bonus Interview Problems Implemented (Region Rank, % Contribution, Day-over-Day Delta)
-- All 5 Terminal Screenshots Verified and Linked
+- All 8 Terminal Screenshots Verified and Linked
 - Git Repository Synchronized and Pushed
