@@ -20,7 +20,9 @@ Day11_SQL_Portfolio_Project
 |   |-- 02_dataset_profile_kpi_and_revenue_by_state.png
 |   |-- 03_top_products_and_delivery_performance.png
 |   |-- 04_customer_segmentation.png
-|   `-- 05_monthly_revenue_trend_and_date_check.png
+|   |-- 05_monthly_revenue_trend_and_date_check.png
+|   |-- 06_window_function_ranking.png
+|   `-- 07_view_indexes_and_query_optimization.png
 `-- dataset/
     |-- OrdersCleaned_UTF8.csv
     `-- schema_and_data.sql
@@ -231,6 +233,20 @@ SELECT name,
 FROM orders
 GROUP BY name;
 ```
+Top Ranked Customers Output:
+
+| name | spending (Rs) | customer_rank |
+|---|---|---|
+| Sha | 71,249.00 | 1 |
+| Pra | 61,985.00 | 2 |
+| San | 61,911.00 | 3 |
+| Man | 60,009.00 | 4 |
+| Poo | 48,848.00 | 5 |
+| Pri | 48,018.00 | 6 |
+| Dee | 44,883.00 | 7 |
+| Vik | 44,436.00 | 8 |
+| Roh | 40,049.00 | 9 |
+| Neh | 38,692.00 | 10 |
 
 ---
 
@@ -244,6 +260,7 @@ GROUP BY name;
 
 SELECT * FROM top_customers ORDER BY spending DESC LIMIT 10;
 ```
+Result: View `top_customers` successfully created and verified.
 
 ---
 
@@ -257,6 +274,18 @@ SELECT *
 FROM orders
 WHERE state = 'Maharashtra';
 ```
+Execution Plan Output:
+
+```text
+Bitmap Heap Scan on orders (cost=6.48..55.03 rows=284 width=177) (actual time=0.421..0.547 rows=284.00 loops=1)
+  Recheck Cond: ((state)::text = 'Maharashtra'::text)
+  Heap Blocks: exact=30
+  ->  Bitmap Index Scan on idx_state (cost=0.00..6.41 rows=284 width=0) (actual time=0.138..0.138 rows=284.00 loops=1)
+        Index Cond: ((state)::text = 'Maharashtra'::text)
+Planning Time: 6.487 ms
+Execution Time: 1.269 ms
+```
+Key Diagnostic Finding: Query utilizes `Bitmap Index Scan on idx_state` retrieving 284 rows across 30 heap blocks in 1.269 ms, achieving high-throughput selective retrieval.
 
 ---
 
@@ -269,6 +298,8 @@ All case study implementations were validated in PostgreSQL:
 3. `03_top_products_and_delivery_performance.png`: Complete 17-product ranking and fulfillment status breakdown
 4. `04_customer_segmentation.png`: Dynamic customer value tier grouping (Premium, Gold, Regular)
 5. `05_monthly_revenue_trend_and_date_check.png`: Monthly revenue trend evaluation and timestamp verification
+6. `06_window_function_ranking.png`: Analytical RANK() window function ranking customers by aggregate spend
+7. `07_view_indexes_and_query_optimization.png`: View creation, B-tree indexes, and EXPLAIN ANALYZE index scan plan
 
 ---
 
@@ -325,5 +356,5 @@ This challenge strengthened my database design, query optimization, and data ana
 - Monthly Revenue Trend Evaluated
 - Database View and Performance Indexes Created
 - 8 Deep Strategic Insights Documented in `insights.md`
-- All 5 Terminal Screenshots Verified and Linked
+- All 7 Terminal Screenshots Verified and Linked
 - Git Repository Synchronized and Pushed
